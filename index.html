@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>FootVision AI — Editor Tático Avançado</title>
+<title>FootVision AI — Análise Tática</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
@@ -58,7 +58,7 @@ button {
   background: #ffcc00;
   border-radius: 50%;
   position: absolute;
-  cursor: grab;
+  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -72,6 +72,11 @@ button {
   color: white;
 }
 
+.player.selected {
+  outline: 4px solid #00e5ff;
+  transform: scale(1.15);
+}
+
 svg {
   position: absolute;
   width: 100%;
@@ -83,7 +88,7 @@ svg {
 
 <body>
 
-<header>⚽ FootVision AI — Editor Tático Avançado</header>
+<header>⚽ FootVision AI — Análise Tática</header>
 
 <div id="controls">
   <button onclick="addPlayer('home')">+ Jogador A</button>
@@ -91,6 +96,7 @@ svg {
   <button onclick="setMode('arrow')">Seta</button>
   <button onclick="setMode('line')">Linha</button>
   <button onclick="setMode(null)">Mover</button>
+  <button onclick="clearDraw()">Limpar</button>
 </div>
 
 <div id="field">
@@ -100,10 +106,12 @@ svg {
 <script>
 const field = document.getElementById("field");
 const svg = document.getElementById("drawLayer");
+
 let mode = null;
 let startX = 0;
 let startY = 0;
 let playerCount = 0;
+let selectedPlayer = null;
 
 function setMode(m) {
   mode = m;
@@ -117,8 +125,17 @@ function addPlayer(team) {
   p.innerText = playerCount;
   p.style.left = "50%";
   p.style.top = "50%";
+
+  p.onclick = () => selectPlayer(p);
+
   enableDrag(p);
   field.appendChild(p);
+}
+
+function selectPlayer(player) {
+  document.querySelectorAll(".player").forEach(p => p.classList.remove("selected"));
+  player.classList.add("selected");
+  selectedPlayer = player;
 }
 
 function enableDrag(el) {
@@ -129,6 +146,7 @@ function enableDrag(el) {
 
   function startDrag(e) {
     if (mode) return;
+    selectPlayer(el);
     const evt = e.touches ? e.touches[0] : e;
     offsetX = evt.clientX - el.offsetLeft;
     offsetY = evt.clientY - el.offsetTop;
@@ -184,6 +202,10 @@ function endDraw(e) {
   }
 
   svg.appendChild(line);
+}
+
+function clearDraw() {
+  svg.innerHTML = "";
 }
 </script>
 
