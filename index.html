@@ -7,22 +7,18 @@
 <style>
 body {
   margin: 0;
-  font-family: Arial, sans-serif;
   background: #111;
   color: #fff;
+  font-family: Arial, sans-serif;
   text-align: center;
 }
 
-h1 {
-  margin: 10px 0;
-}
-
 #toolbar {
-  padding: 10px;
   background: #1a1a1a;
+  padding: 10px;
   display: flex;
-  justify-content: center;
   gap: 10px;
+  justify-content: center;
   flex-wrap: wrap;
 }
 
@@ -30,84 +26,28 @@ button {
   padding: 8px 14px;
   border: none;
   border-radius: 5px;
+  font-weight: bold;
   cursor: pointer;
   background: #00c853;
-  font-weight: bold;
 }
 
-.secondary {
-  background: #03a9f4;
-}
-
-.danger {
-  background: #e53935;
-  color: #fff;
-}
-
-#field-container {
-  display: flex;
-  justify-content: center;
-  margin-top: 10px;
-}
+.secondary { background: #03a9f4; }
+.danger { background: #e53935; color: #fff; }
 
 #field {
   position: relative;
   width: 90vw;
   max-width: 900px;
   height: 520px;
+  margin: 10px auto;
   background: #1b5e20;
-  border: 4px solid #fff;
   border-radius: 10px;
-  overflow: hidden;
 }
 
-/* LINHAS DO CAMPO */
-#field::before,
-#field::after {
-  content: "";
+canvas {
   position: absolute;
-  border: 2px solid #fff;
-}
-
-#field::before {
-  width: 100%;
-  height: 100%;
-}
-
-.center-line {
-  position: absolute;
-  width: 2px;
-  height: 100%;
-  background: #fff;
-  left: 50%;
-}
-
-.center-circle {
-  position: absolute;
-  width: 120px;
-  height: 120px;
-  border: 2px solid #fff;
-  border-radius: 50%;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-}
-
-.area {
-  position: absolute;
-  width: 120px;
-  height: 220px;
-  border: 2px solid #fff;
-  top: 50%;
-  transform: translateY(-50%);
-}
-
-.left-area {
+  top: 0;
   left: 0;
-}
-
-.right-area {
-  right: 0;
 }
 
 .player {
@@ -115,140 +55,131 @@ button {
   height: 32px;
   border-radius: 50%;
   position: absolute;
-  cursor: grab;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: bold;
-  user-select: none;
-  z-index: 5;
+  cursor: grab;
+  z-index: 10;
 }
 
-.teamA {
-  background: #ffeb3b;
-  color: #000;
-}
-
-.teamB {
-  background: #03a9f4;
-  color: #000;
-}
-
-canvas {
-  position: absolute;
-  top: 0;
-  left: 0;
-  z-index: 2;
-}
+.teamA { background: #ffeb3b; }
+.teamB { background: #03a9f4; }
 </style>
 </head>
 
 <body>
 
-<h1>⚽ FootVision AI — Editor Tático</h1>
+<h2>⚽ FootVision AI — Editor Tático</h2>
 
 <div id="toolbar">
-  <button onclick="addPlayer('A')">+ Jogador Time A</button>
-  <button onclick="addPlayer('B')">+ Jogador Time B</button>
-  <button class="secondary" onclick="setMode('arrow')">➡️ Seta</button>
-  <button class="secondary" onclick="setMode('pass')">🔗 Passe</button>
-  <button class="danger" onclick="clearCanvas()">🧹 Limpar</button>
+  <button onclick="addPlayer('A')">+ Time A</button>
+  <button onclick="addPlayer('B')">+ Time B</button>
+  <button class="secondary" onclick="mode='arrow'">➡️ Seta</button>
+  <button class="secondary" onclick="mode='pass'">🔗 Passe</button>
+  <button class="danger" onclick="clearDraw()">🧹 Limpar</button>
 </div>
 
-<div id="field-container">
-  <div id="field">
-    <div class="center-line"></div>
-    <div class="center-circle"></div>
-    <div class="area left-area"></div>
-    <div class="area right-area"></div>
-    <canvas id="drawCanvas"></canvas>
-  </div>
+<div id="field">
+  <canvas id="canvas"></canvas>
 </div>
 
 <script>
-const field = document.getElementById('field');
-const canvas = document.getElementById('drawCanvas');
-const ctx = canvas.getContext('2d');
+const field = document.getElementById("field");
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
 
-function resizeCanvas() {
+function resize() {
   canvas.width = field.clientWidth;
   canvas.height = field.clientHeight;
+  drawField();
 }
-resizeCanvas();
-window.addEventListener('resize', resizeCanvas);
+window.addEventListener("resize", resize);
+resize();
+
+/* DESENHO DO CAMPO */
+function drawField() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.strokeStyle = "#fff";
+  ctx.lineWidth = 2;
+
+  // Bordas
+  ctx.strokeRect(5, 5, canvas.width - 10, canvas.height - 10);
+
+  // Meio campo
+  ctx.beginPath();
+  ctx.moveTo(canvas.width / 2, 5);
+  ctx.lineTo(canvas.width / 2, canvas.height - 5);
+  ctx.stroke();
+
+  // Círculo central
+  ctx.beginPath();
+  ctx.arc(canvas.width / 2, canvas.height / 2, 60, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // Áreas
+  ctx.strokeRect(5, canvas.height / 2 - 100, 120, 200);
+  ctx.strokeRect(canvas.width - 125, canvas.height / 2 - 100, 120, 200);
+}
 
 let mode = null;
 let startX, startY, drawing = false;
 
-function setMode(m) {
-  mode = m;
-}
-
-function clearCanvas() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-}
-
-field.addEventListener('mousedown', e => {
+canvas.addEventListener("mousedown", e => {
   if (!mode) return;
   drawing = true;
-  const rect = canvas.getBoundingClientRect();
-  startX = e.clientX - rect.left;
-  startY = e.clientY - rect.top;
+  startX = e.offsetX;
+  startY = e.offsetY;
 });
 
-field.addEventListener('mouseup', e => {
+canvas.addEventListener("mouseup", e => {
   if (!drawing) return;
   drawing = false;
-  const rect = canvas.getBoundingClientRect();
-  drawLine(startX, startY, e.clientX - rect.left, e.clientY - rect.top, mode);
+  drawLine(startX, startY, e.offsetX, e.offsetY);
 });
 
-function drawLine(x1, y1, x2, y2, type) {
+function drawLine(x1, y1, x2, y2) {
+  ctx.strokeStyle = mode === "arrow" ? "#ff5252" : "#ffffff";
+  ctx.lineWidth = 3;
+
   ctx.beginPath();
   ctx.moveTo(x1, y1);
   ctx.lineTo(x2, y2);
-  ctx.strokeStyle = type === 'arrow' ? '#ff5252' : '#ffffff';
-  ctx.lineWidth = 3;
   ctx.stroke();
 
-  if (type === 'arrow') drawArrowHead(x1, y1, x2, y2);
+  if (mode === "arrow") {
+    const a = Math.atan2(y2 - y1, x2 - x1);
+    ctx.beginPath();
+    ctx.moveTo(x2, y2);
+    ctx.lineTo(x2 - 10 * Math.cos(a - Math.PI / 6), y2 - 10 * Math.sin(a - Math.PI / 6));
+    ctx.lineTo(x2 - 10 * Math.cos(a + Math.PI / 6), y2 - 10 * Math.sin(a + Math.PI / 6));
+    ctx.fillStyle = "#ff5252";
+    ctx.fill();
+  }
 }
 
-function drawArrowHead(x1, y1, x2, y2) {
-  const angle = Math.atan2(y2 - y1, x2 - x1);
-  const size = 10;
-  ctx.beginPath();
-  ctx.moveTo(x2, y2);
-  ctx.lineTo(x2 - size * Math.cos(angle - Math.PI / 6),
-             y2 - size * Math.sin(angle - Math.PI / 6));
-  ctx.lineTo(x2 - size * Math.cos(angle + Math.PI / 6),
-             y2 - size * Math.sin(angle + Math.PI / 6));
-  ctx.fillStyle = '#ff5252';
-  ctx.fill();
+function clearDraw() {
+  drawField();
 }
 
 function addPlayer(team) {
-  const p = document.createElement('div');
-  p.className = `player ${team === 'A' ? 'teamA' : 'teamB'}`;
+  const p = document.createElement("div");
+  p.className = "player " + (team === "A" ? "teamA" : "teamB");
   p.innerText = team;
-  p.style.left = Math.random() * (field.clientWidth - 40) + 'px';
-  p.style.top = Math.random() * (field.clientHeight - 40) + 'px';
+  p.style.left = Math.random() * (field.clientWidth - 40) + "px";
+  p.style.top = Math.random() * (field.clientHeight - 40) + "px";
   field.appendChild(p);
   drag(p);
 }
 
 function drag(el) {
   let ox, oy, d = false;
-  el.onmousedown = e => {
-    d = true;
-    ox = e.offsetX;
-    oy = e.offsetY;
-  };
+  el.onmousedown = e => { d = true; ox = e.offsetX; oy = e.offsetY; };
   document.onmousemove = e => {
     if (!d) return;
     const r = field.getBoundingClientRect();
-    el.style.left = e.clientX - r.left - ox + 'px';
-    el.style.top = e.clientY - r.top - oy + 'px';
+    el.style.left = e.clientX - r.left - ox + "px";
+    el.style.top = e.clientY - r.top - oy + "px";
   };
   document.onmouseup = () => d = false;
 }
