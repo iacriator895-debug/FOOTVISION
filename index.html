@@ -1,142 +1,199 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <title>FootVision AI — Editor Tático</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta charset="UTF-8">
+<title>FootVision AI — Editor Tático Avançado</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <style>
-    body {
-      margin: 0;
-      font-family: Arial, Helvetica, sans-serif;
-      background-color: #0b6623;
-      color: #fff;
-      text-align: center;
-    }
+<style>
+body {
+  margin: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  background-color: #0b6623;
+  color: #fff;
+  text-align: center;
+}
 
-    header {
-      padding: 15px;
-      font-size: 22px;
-      font-weight: bold;
-      background: #0a3f1c;
-    }
+header {
+  padding: 14px;
+  font-size: 22px;
+  font-weight: bold;
+  background: #0a3f1c;
+}
 
-    #controls {
-      margin: 10px;
-    }
+#controls {
+  margin: 10px;
+}
 
-    button {
-      padding: 8px 12px;
-      margin: 4px;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-weight: bold;
-    }
+button {
+  padding: 8px 12px;
+  margin: 4px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+}
 
-    #field {
-      position: relative;
-      width: 90vw;
-      max-width: 800px;
-      height: 480px;
-      margin: 20px auto;
-      background: linear-gradient(
-        to right,
-        #0b6623 0%,
-        #0b6623 48%,
-        white 48%,
-        white 52%,
-        #0b6623 52%,
-        #0b6623 100%
-      );
-      border: 4px solid white;
-    }
+#field {
+  position: relative;
+  width: 90vw;
+  max-width: 800px;
+  height: 480px;
+  margin: 20px auto;
+  background: linear-gradient(
+    to right,
+    #0b6623 0%,
+    #0b6623 48%,
+    white 48%,
+    white 52%,
+    #0b6623 52%,
+    #0b6623 100%
+  );
+  border: 4px solid white;
+}
 
-    .player {
-      width: 32px;
-      height: 32px;
-      background: #ffcc00;
-      border-radius: 50%;
-      position: absolute;
-      cursor: grab;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: bold;
-      color: black;
-      user-select: none;
-    }
+.player {
+  width: 32px;
+  height: 32px;
+  background: #ffcc00;
+  border-radius: 50%;
+  position: absolute;
+  cursor: grab;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  color: black;
+  user-select: none;
+}
 
-    .away {
-      background: #ff4444;
-      color: white;
-    }
-  </style>
+.away {
+  background: #ff4444;
+  color: white;
+}
+
+svg {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+</style>
 </head>
 
 <body>
 
-<header>⚽ FootVision AI — Editor Tático</header>
+<header>⚽ FootVision AI — Editor Tático Avançado</header>
 
 <div id="controls">
-  <button onclick="addPlayer('home')">+ Jogador Time A</button>
-  <button onclick="addPlayer('away')">+ Jogador Time B</button>
+  <button onclick="addPlayer('home')">+ Jogador A</button>
+  <button onclick="addPlayer('away')">+ Jogador B</button>
+  <button onclick="setMode('arrow')">Seta</button>
+  <button onclick="setMode('line')">Linha</button>
+  <button onclick="setMode(null)">Mover</button>
 </div>
 
-<div id="field"></div>
+<div id="field">
+  <svg id="drawLayer"></svg>
+</div>
 
 <script>
-  const field = document.getElementById("field");
-  let playerCount = 0;
+const field = document.getElementById("field");
+const svg = document.getElementById("drawLayer");
+let mode = null;
+let startX = 0;
+let startY = 0;
+let playerCount = 0;
 
-  function addPlayer(team) {
-    playerCount++;
+function setMode(m) {
+  mode = m;
+}
 
-    const player = document.createElement("div");
-    player.className = "player";
-    if (team === "away") player.classList.add("away");
+function addPlayer(team) {
+  playerCount++;
+  const p = document.createElement("div");
+  p.className = "player";
+  if (team === "away") p.classList.add("away");
+  p.innerText = playerCount;
+  p.style.left = "50%";
+  p.style.top = "50%";
+  enableDrag(p);
+  field.appendChild(p);
+}
 
-    player.innerText = playerCount;
-    player.style.left = "50%";
-    player.style.top = "50%";
+function enableDrag(el) {
+  let offsetX, offsetY;
 
-    enableDrag(player);
-    field.appendChild(player);
+  el.addEventListener("mousedown", startDrag);
+  el.addEventListener("touchstart", startDrag);
+
+  function startDrag(e) {
+    if (mode) return;
+    const evt = e.touches ? e.touches[0] : e;
+    offsetX = evt.clientX - el.offsetLeft;
+    offsetY = evt.clientY - el.offsetTop;
+    document.addEventListener("mousemove", drag);
+    document.addEventListener("touchmove", drag);
+    document.addEventListener("mouseup", stopDrag);
+    document.addEventListener("touchend", stopDrag);
   }
 
-  function enableDrag(el) {
-    let offsetX = 0, offsetY = 0;
-
-    el.addEventListener("mousedown", startDrag);
-    el.addEventListener("touchstart", startDrag);
-
-    function startDrag(e) {
-      e.preventDefault();
-
-      const evt = e.touches ? e.touches[0] : e;
-      offsetX = evt.clientX - el.offsetLeft;
-      offsetY = evt.clientY - el.offsetTop;
-
-      document.addEventListener("mousemove", drag);
-      document.addEventListener("touchmove", drag);
-      document.addEventListener("mouseup", stopDrag);
-      document.addEventListener("touchend", stopDrag);
-    }
-
-    function drag(e) {
-      const evt = e.touches ? e.touches[0] : e;
-      el.style.left = (evt.clientX - offsetX - field.offsetLeft) + "px";
-      el.style.top = (evt.clientY - offsetY - field.offsetTop) + "px";
-    }
-
-    function stopDrag() {
-      document.removeEventListener("mousemove", drag);
-      document.removeEventListener("touchmove", drag);
-      document.removeEventListener("mouseup", stopDrag);
-      document.removeEventListener("touchend", stopDrag);
-    }
+  function drag(e) {
+    const evt = e.touches ? e.touches[0] : e;
+    el.style.left = (evt.clientX - offsetX - field.offsetLeft) + "px";
+    el.style.top = (evt.clientY - offsetY - field.offsetTop) + "px";
   }
+
+  function stopDrag() {
+    document.removeEventListener("mousemove", drag);
+    document.removeEventListener("touchmove", drag);
+    document.removeEventListener("mouseup", stopDrag);
+    document.removeEventListener("touchend", stopDrag);
+  }
+}
+
+field.addEventListener("mousedown", startDraw);
+field.addEventListener("touchstart", startDraw);
+
+function startDraw(e) {
+  if (!mode) return;
+  const evt = e.touches ? e.touches[0] : e;
+  startX = evt.clientX - field.offsetLeft;
+  startY = evt.clientY - field.offsetTop;
+}
+
+field.addEventListener("mouseup", endDraw);
+field.addEventListener("touchend", endDraw);
+
+function endDraw(e) {
+  if (!mode) return;
+  const evt = e.changedTouches ? e.changedTouches[0] : e;
+  const endX = evt.clientX - field.offsetLeft;
+  const endY = evt.clientY - field.offsetTop;
+
+  const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+  line.setAttribute("x1", startX);
+  line.setAttribute("y1", startY);
+  line.setAttribute("x2", endX);
+  line.setAttribute("y2", endY);
+  line.setAttribute("stroke", mode === "arrow" ? "yellow" : "white");
+  line.setAttribute("stroke-width", 3);
+
+  if (mode === "arrow") {
+    line.setAttribute("marker-end", "url(#arrow)");
+  }
+
+  svg.appendChild(line);
+}
 </script>
+
+<svg width="0" height="0">
+<defs>
+  <marker id="arrow" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto">
+    <path d="M0,0 L10,5 L0,10 z" fill="yellow" />
+  </marker>
+</defs>
+</svg>
 
 </body>
 </html>
