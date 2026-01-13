@@ -1,97 +1,148 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <title>FootVision AI – Editor Tático</title>
-  <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: #111;
-      color: #fff;
-      text-align: center;
-    }
+<meta charset="UTF-8">
+<title>FootVision AI — Editor Tático</title>
 
-    h1 {
-      margin: 10px 0;
-    }
+<style>
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #111;
+  color: #fff;
+  text-align: center;
+}
 
-    #toolbar {
-      padding: 10px;
-      background: #1a1a1a;
-      display: flex;
-      justify-content: center;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
+h1 {
+  margin: 10px 0;
+}
 
-    button {
-      padding: 8px 14px;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      background: #00c853;
-      color: #000;
-      font-weight: bold;
-    }
+#toolbar {
+  padding: 10px;
+  background: #1a1a1a;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
 
-    button.secondary {
-      background: #03a9f4;
-    }
+button {
+  padding: 8px 14px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  background: #00c853;
+  font-weight: bold;
+}
 
-    button.danger {
-      background: #e53935;
-      color: #fff;
-    }
+.secondary {
+  background: #03a9f4;
+}
 
-    #field-container {
-      display: flex;
-      justify-content: center;
-      margin-top: 10px;
-    }
+.danger {
+  background: #e53935;
+  color: #fff;
+}
 
-    #field {
-      position: relative;
-      width: 90vw;
-      max-width: 800px;
-      height: 500px;
-      background: #1b5e20;
-      border: 4px solid #fff;
-      border-radius: 10px;
-      overflow: hidden;
-    }
+#field-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 10px;
+}
 
-    .player {
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      position: absolute;
-      cursor: grab;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 14px;
-      font-weight: bold;
-      color: #000;
-      user-select: none;
-    }
+#field {
+  position: relative;
+  width: 90vw;
+  max-width: 900px;
+  height: 520px;
+  background: #1b5e20;
+  border: 4px solid #fff;
+  border-radius: 10px;
+  overflow: hidden;
+}
 
-    .teamA {
-      background: #ffeb3b;
-    }
+/* LINHAS DO CAMPO */
+#field::before,
+#field::after {
+  content: "";
+  position: absolute;
+  border: 2px solid #fff;
+}
 
-    .teamB {
-      background: #03a9f4;
-    }
+#field::before {
+  width: 100%;
+  height: 100%;
+}
 
-    canvas {
-      position: absolute;
-      top: 0;
-      left: 0;
-      z-index: 0;
-    }
-  </style>
+.center-line {
+  position: absolute;
+  width: 2px;
+  height: 100%;
+  background: #fff;
+  left: 50%;
+}
+
+.center-circle {
+  position: absolute;
+  width: 120px;
+  height: 120px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.area {
+  position: absolute;
+  width: 120px;
+  height: 220px;
+  border: 2px solid #fff;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.left-area {
+  left: 0;
+}
+
+.right-area {
+  right: 0;
+}
+
+.player {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  position: absolute;
+  cursor: grab;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  user-select: none;
+  z-index: 5;
+}
+
+.teamA {
+  background: #ffeb3b;
+  color: #000;
+}
+
+.teamB {
+  background: #03a9f4;
+  color: #000;
+}
+
+canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 2;
+}
+</style>
 </head>
+
 <body>
 
 <h1>⚽ FootVision AI — Editor Tático</h1>
@@ -106,117 +157,101 @@
 
 <div id="field-container">
   <div id="field">
+    <div class="center-line"></div>
+    <div class="center-circle"></div>
+    <div class="area left-area"></div>
+    <div class="area right-area"></div>
     <canvas id="drawCanvas"></canvas>
   </div>
 </div>
 
 <script>
-  const field = document.getElementById('field');
-  const canvas = document.getElementById('drawCanvas');
-  const ctx = canvas.getContext('2d');
+const field = document.getElementById('field');
+const canvas = document.getElementById('drawCanvas');
+const ctx = canvas.getContext('2d');
 
+function resizeCanvas() {
   canvas.width = field.clientWidth;
   canvas.height = field.clientHeight;
+}
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
 
-  let mode = null;
-  let startX = 0;
-  let startY = 0;
-  let drawing = false;
+let mode = null;
+let startX, startY, drawing = false;
 
-  function setMode(m) {
-    mode = m;
-  }
+function setMode(m) {
+  mode = m;
+}
 
-  function clearCanvas() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-  }
+function clearCanvas() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+}
 
-  field.addEventListener('mousedown', (e) => {
-    if (!mode) return;
-    drawing = true;
-    const rect = canvas.getBoundingClientRect();
-    startX = e.clientX - rect.left;
-    startY = e.clientY - rect.top;
-  });
+field.addEventListener('mousedown', e => {
+  if (!mode) return;
+  drawing = true;
+  const rect = canvas.getBoundingClientRect();
+  startX = e.clientX - rect.left;
+  startY = e.clientY - rect.top;
+});
 
-  field.addEventListener('mouseup', (e) => {
-    if (!drawing) return;
-    drawing = false;
-    const rect = canvas.getBoundingClientRect();
-    const endX = e.clientX - rect.left;
-    const endY = e.clientY - rect.top;
+field.addEventListener('mouseup', e => {
+  if (!drawing) return;
+  drawing = false;
+  const rect = canvas.getBoundingClientRect();
+  drawLine(startX, startY, e.clientX - rect.left, e.clientY - rect.top, mode);
+});
 
-    drawLine(startX, startY, endX, endY, mode);
-  });
+function drawLine(x1, y1, x2, y2, type) {
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  ctx.lineTo(x2, y2);
+  ctx.strokeStyle = type === 'arrow' ? '#ff5252' : '#ffffff';
+  ctx.lineWidth = 3;
+  ctx.stroke();
 
-  function drawLine(x1, y1, x2, y2, type) {
-    ctx.beginPath();
-    ctx.moveTo(x1, y1);
-    ctx.lineTo(x2, y2);
-    ctx.strokeStyle = type === 'arrow' ? '#ff5252' : '#ffffff';
-    ctx.lineWidth = 3;
-    ctx.stroke();
+  if (type === 'arrow') drawArrowHead(x1, y1, x2, y2);
+}
 
-    if (type === 'arrow') {
-      drawArrowHead(x1, y1, x2, y2);
-    }
-  }
+function drawArrowHead(x1, y1, x2, y2) {
+  const angle = Math.atan2(y2 - y1, x2 - x1);
+  const size = 10;
+  ctx.beginPath();
+  ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - size * Math.cos(angle - Math.PI / 6),
+             y2 - size * Math.sin(angle - Math.PI / 6));
+  ctx.lineTo(x2 - size * Math.cos(angle + Math.PI / 6),
+             y2 - size * Math.sin(angle + Math.PI / 6));
+  ctx.fillStyle = '#ff5252';
+  ctx.fill();
+}
 
-  function drawArrowHead(x1, y1, x2, y2) {
-    const angle = Math.atan2(y2 - y1, x2 - x1);
-    const size = 10;
+function addPlayer(team) {
+  const p = document.createElement('div');
+  p.className = `player ${team === 'A' ? 'teamA' : 'teamB'}`;
+  p.innerText = team;
+  p.style.left = Math.random() * (field.clientWidth - 40) + 'px';
+  p.style.top = Math.random() * (field.clientHeight - 40) + 'px';
+  field.appendChild(p);
+  drag(p);
+}
 
-    ctx.beginPath();
-    ctx.moveTo(x2, y2);
-    ctx.lineTo(x2 - size * Math.cos(angle - Math.PI / 6),
-               y2 - size * Math.sin(angle - Math.PI / 6));
-    ctx.lineTo(x2 - size * Math.cos(angle + Math.PI / 6),
-               y2 - size * Math.sin(angle + Math.PI / 6));
-    ctx.closePath();
-    ctx.fillStyle = '#ff5252';
-    ctx.fill();
-  }
-
-  function addPlayer(team) {
-    const player = document.createElement('div');
-    player.classList.add('player');
-    player.classList.add(team === 'A' ? 'teamA' : 'teamB');
-    player.innerText = team;
-
-    player.style.left = Math.random() * (field.clientWidth - 40) + 'px';
-    player.style.top = Math.random() * (field.clientHeight - 40) + 'px';
-
-    field.appendChild(player);
-    makeDraggable(player);
-  }
-
-  function makeDraggable(el) {
-    let offsetX, offsetY, dragging = false;
-
-    el.addEventListener('mousedown', (e) => {
-      dragging = true;
-      offsetX = e.offsetX;
-      offsetY = e.offsetY;
-      el.style.cursor = 'grabbing';
-    });
-
-    document.addEventListener('mousemove', (e) => {
-      if (!dragging) return;
-      const rect = field.getBoundingClientRect();
-      el.style.left = (e.clientX - rect.left - offsetX) + 'px';
-      el.style.top = (e.clientY - rect.top - offsetY) + 'px';
-    });
-
-    document.addEventListener('mouseup', () => {
-      dragging = false;
-      el.style.cursor = 'grab';
-    });
-  }
-
-  window.addEventListener('resize', () => {
-    canvas.width = field.clientWidth;
-    canvas.height = field.clientHeight;
-  });
+function drag(el) {
+  let ox, oy, d = false;
+  el.onmousedown = e => {
+    d = true;
+    ox = e.offsetX;
+    oy = e.offsetY;
+  };
+  document.onmousemove = e => {
+    if (!d) return;
+    const r = field.getBoundingClientRect();
+    el.style.left = e.clientX - r.left - ox + 'px';
+    el.style.top = e.clientY - r.top - oy + 'px';
+  };
+  document.onmouseup = () => d = false;
+}
 </script>
 
 </body>
