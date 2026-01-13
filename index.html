@@ -42,6 +42,7 @@ button {
   margin: 10px auto;
   background: #1b5e20;
   border-radius: 10px;
+  overflow: hidden;
 }
 
 canvas {
@@ -89,6 +90,7 @@ const field = document.getElementById("field");
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 
+// Redimensionamento do canvas
 function resize() {
   canvas.width = field.clientWidth;
   canvas.height = field.clientHeight;
@@ -97,52 +99,57 @@ function resize() {
 window.addEventListener("resize", resize);
 resize();
 
-/* DESENHO DO CAMPO — HÍBRIDO */
+/* DESENHO DO CAMPO — APRIMORADO */
 function drawField() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.strokeStyle = "#fff";
-  ctx.lineWidth = 2;
 
   const w = canvas.width;
   const h = canvas.height;
 
-  // Bordas
-  ctx.strokeRect(5, 5, w - 10, h - 10);
+  ctx.strokeStyle = "#fff";
+  ctx.lineWidth = 2;
+
+  // Bordas do campo
+  ctx.strokeRect(10, 10, w - 20, h - 20);
 
   // Meio-campo
   ctx.beginPath();
-  ctx.moveTo(w / 2, 5);
-  ctx.lineTo(w / 2, h - 5);
+  ctx.moveTo(w / 2, 10);
+  ctx.lineTo(w / 2, h - 10);
   ctx.stroke();
 
-  // Círculo central (MAIOR)
+  // Círculo central
+  const centerRadius = Math.min(w, h) * 0.09;
   ctx.beginPath();
-  ctx.arc(w / 2, h / 2, 75, 0, Math.PI * 2);
+  ctx.arc(w / 2, h / 2, centerRadius, 0, Math.PI * 2);
   ctx.stroke();
 
   // Áreas grandes
-  const areaW = 140;
-  const areaH = 260;
-  ctx.strokeRect(5, h / 2 - areaH / 2, areaW, areaH);
-  ctx.strokeRect(w - areaW - 5, h / 2 - areaH / 2, areaW, areaH);
+  const areaW = w * 0.15;
+  const areaH = h * 0.5;
+  ctx.strokeRect(10, h/2 - areaH/2, areaW, areaH);
+  ctx.strokeRect(w - areaW - 10, h/2 - areaH/2, areaW, areaH);
 
-  // Marca do pênalti
+  // Marcas de pênalti
+  const penaltyDist = w * 0.105;
   ctx.beginPath();
-  ctx.arc(95, h / 2, 3, 0, Math.PI * 2);
-  ctx.arc(w - 95, h / 2, 3, 0, Math.PI * 2);
+  ctx.arc(penaltyDist, h/2, 5, 0, Math.PI * 2);
+  ctx.arc(w - penaltyDist, h/2, 5, 0, Math.PI * 2);
   ctx.fillStyle = "#fff";
   ctx.fill();
 
   // Meia-lua
+  const semiCircleRadius = areaW * 0.6;
   ctx.beginPath();
-  ctx.arc(95, h / 2, 60, -Math.PI / 2, Math.PI / 2);
+  ctx.arc(penaltyDist, h/2, semiCircleRadius, -Math.PI/2, Math.PI/2);
   ctx.stroke();
 
   ctx.beginPath();
-  ctx.arc(w - 95, h / 2, 60, Math.PI / 2, -Math.PI / 2);
+  ctx.arc(w - penaltyDist, h/2, semiCircleRadius, Math.PI/2, -Math.PI/2);
   ctx.stroke();
 }
 
+// Desenho de linhas e setas
 let mode = null;
 let startX, startY, drawing = false;
 
@@ -182,6 +189,7 @@ function clearDraw() {
   drawField();
 }
 
+// Adição de jogadores
 function addPlayer(team) {
   const p = document.createElement("div");
   p.className = "player " + (team === "A" ? "teamA" : "teamB");
@@ -192,6 +200,7 @@ function addPlayer(team) {
   drag(p);
 }
 
+// Função de arrastar jogadores
 function drag(el) {
   let ox, oy, d = false;
   el.onmousedown = e => { d = true; ox = e.offsetX; oy = e.offsetY; };
