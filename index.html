@@ -1,35 +1,88 @@
-from ultralytics import YOLO
-import cv2
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Soccer Stats - Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="bg-slate-900 text-white font-sans">
 
-model = YOLO("yolov8n.pt")
+    <div class="flex h-screen">
+        <aside class="w-64 bg-slate-800 p-6 flex flex-col border-r border-slate-700">
+            <h1 class="text-2xl font-bold text-emerald-400 mb-10"><i class="fas fa-microchip mr-2"></i>AI Soccer</h1>
+            <nav class="space-y-4">
+                <a href="#" class="block p-3 bg-emerald-500 rounded-lg"><i class="fas fa-chart-line mr-2"></i> Dashboard</a>
+                <a href="#" class="block p-3 hover:bg-slate-700 rounded-lg transition"><i class="fas fa-video mr-2"></i> Análise de Vídeo</a>
+                <a href="#" class="block p-3 hover:bg-slate-700 rounded-lg transition"><i class="fas fa-users mr-2"></i> Elenco</a>
+                <a href="#" class="block p-3 hover:bg-slate-700 rounded-lg transition"><i class="fas fa-cog mr-2"></i> Configurações</a>
+            </nav>
+        </aside>
 
+        <main class="flex-1 overflow-y-auto p-8">
+            <header class="flex justify-between items-center mb-8">
+                <h2 class="text-3xl font-semibold">Análise em Tempo Real</h2>
+                <button class="bg-emerald-500 hover:bg-emerald-600 px-6 py-2 rounded-full font-bold transition">
+                    <i class="fas fa-upload mr-2"></i> Novo Jogo
+                </button>
+            </header>
 
-def detect_players(video_path):
-    cap = cv2.VideoCapture(video_path)
-    frames = []
-    frame_id = 0
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                <div class="bg-slate-800 p-6 rounded-xl border border-slate-700">
+                    <p class="text-slate-400 text-sm">Posse de Bola</p>
+                    <p class="text-3xl font-bold text-emerald-400">58% <span class="text-xs text-slate-500">vs 42%</span></p>
+                </div>
+                <div class="bg-slate-800 p-6 rounded-xl border border-slate-700">
+                    <p class="text-slate-400 text-sm">Passes Identificados</p>
+                    <p class="text-3xl font-bold text-blue-400">412</p>
+                </div>
+                <div class="bg-slate-800 p-6 rounded-xl border border-slate-700">
+                    <p class="text-slate-400 text-sm">Velocidade Máx. Chute</p>
+                    <p class="text-3xl font-bold text-orange-400">112 <span class="text-sm italic">km/h</span></p>
+                </div>
+                <div class="bg-slate-800 p-6 rounded-xl border border-slate-700">
+                    <p class="text-slate-400 text-sm">Precisão de Passes</p>
+                    <p class="text-3xl font-bold text-purple-400">89%</p>
+                </div>
+            </div>
 
-    while cap.isOpened():
-        ret, frame = cap.read()
-        if not ret:
-            break
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div class="lg:col-span-2 bg-black rounded-2xl overflow-hidden relative border-2 border-emerald-500/30 shadow-2xl">
+                    <div class="absolute top-4 left-4 bg-black/60 px-3 py-1 rounded text-xs text-emerald-400 border border-emerald-500">
+                        <i class="fas fa-dot-circle animate-pulse mr-1"></i> IA PROCESSANDO...
+                    </div>
+                    <img src="https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&q=80&w=1200" alt="Soccer Feed" class="w-full opacity-80">
+                </div>
 
-        results = model(frame)
-        detections = []
+                <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700">
+                    <h3 class="text-lg font-bold mb-4">Intensidade de Jogo</h3>
+                    <canvas id="performanceChart"></canvas>
+                </div>
+            </div>
+        </main>
+    </div>
 
-        for r in results:
-            for box in r.boxes:
-                cls = int(box.cls[0])
-                conf = float(box.conf[0])
-                if cls == 0 and conf > 0.5:
-                    x1, y1, x2, y2 = map(int, box.xyxy[0])
-                    detections.append({
-                        "bbox": [x1, y1, x2, y2],
-                        "confidence": conf
-                    })
-
-        frames.append({"frame": frame_id, "detections": detections})
-        frame_id += 1
-
-    cap.release()
-    return frames
+    <script>
+        const ctx = document.getElementById('performanceChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['0\'', '15\'', '30\'', '45\'', '60\'', '75\'', '90\''],
+                datasets: [{
+                    label: 'Velocidade Média (km/h)',
+                    data: [8, 12, 11, 9, 13, 10, 7],
+                    borderColor: '#10b981',
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { display: false } },
+                scales: { y: { grid: { color: '#334155' } }, x: { grid: { display: false } } }
+            }
+        });
+    </script>
+</body>
+</html>
