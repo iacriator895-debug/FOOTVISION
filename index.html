@@ -63,8 +63,8 @@ canvas {
   z-index: 10;
 }
 
-.teamA { background: #ffeb3b; }
-.teamB { background: #03a9f4; }
+.teamA { background: #ffeb3b; color:#000; }
+.teamB { background: #03a9f4; color:#000; }
 </style>
 </head>
 
@@ -97,29 +97,50 @@ function resize() {
 window.addEventListener("resize", resize);
 resize();
 
-/* DESENHO DO CAMPO */
+/* DESENHO DO CAMPO — HÍBRIDO */
 function drawField() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.strokeStyle = "#fff";
   ctx.lineWidth = 2;
 
+  const w = canvas.width;
+  const h = canvas.height;
+
   // Bordas
-  ctx.strokeRect(5, 5, canvas.width - 10, canvas.height - 10);
+  ctx.strokeRect(5, 5, w - 10, h - 10);
 
-  // Meio campo
+  // Meio-campo
   ctx.beginPath();
-  ctx.moveTo(canvas.width / 2, 5);
-  ctx.lineTo(canvas.width / 2, canvas.height - 5);
+  ctx.moveTo(w / 2, 5);
+  ctx.lineTo(w / 2, h - 5);
   ctx.stroke();
 
-  // Círculo central
+  // Círculo central (MAIOR)
   ctx.beginPath();
-  ctx.arc(canvas.width / 2, canvas.height / 2, 60, 0, Math.PI * 2);
+  ctx.arc(w / 2, h / 2, 75, 0, Math.PI * 2);
   ctx.stroke();
 
-  // Áreas
-  ctx.strokeRect(5, canvas.height / 2 - 100, 120, 200);
-  ctx.strokeRect(canvas.width - 125, canvas.height / 2 - 100, 120, 200);
+  // Áreas grandes
+  const areaW = 140;
+  const areaH = 260;
+  ctx.strokeRect(5, h / 2 - areaH / 2, areaW, areaH);
+  ctx.strokeRect(w - areaW - 5, h / 2 - areaH / 2, areaW, areaH);
+
+  // Marca do pênalti
+  ctx.beginPath();
+  ctx.arc(95, h / 2, 3, 0, Math.PI * 2);
+  ctx.arc(w - 95, h / 2, 3, 0, Math.PI * 2);
+  ctx.fillStyle = "#fff";
+  ctx.fill();
+
+  // Meia-lua
+  ctx.beginPath();
+  ctx.arc(95, h / 2, 60, -Math.PI / 2, Math.PI / 2);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.arc(w - 95, h / 2, 60, Math.PI / 2, -Math.PI / 2);
+  ctx.stroke();
 }
 
 let mode = null;
@@ -141,7 +162,6 @@ canvas.addEventListener("mouseup", e => {
 function drawLine(x1, y1, x2, y2) {
   ctx.strokeStyle = mode === "arrow" ? "#ff5252" : "#ffffff";
   ctx.lineWidth = 3;
-
   ctx.beginPath();
   ctx.moveTo(x1, y1);
   ctx.lineTo(x2, y2);
