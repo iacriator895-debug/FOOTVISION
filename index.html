@@ -1,94 +1,37 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-PT">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>FootVision AI</title>
+    <title>FootVision AI — Pro Tactical</title>
     <style>
-        body {
-            margin: 0;
-            background: #111;
-            color: #fff;
-            font-family: sans-serif;
-            text-align: center;
-            overflow: hidden;
-            touch-action: none;
-        }
-
-        #toolbar {
-            background: #1a1a1a;
-            padding: 10px;
-            display: flex;
-            gap: 8px;
-            justify-content: center;
-            flex-wrap: wrap;
-            border-bottom: 2px solid #333;
-        }
-
-        button {
-            padding: 10px 14px;
-            border: none;
-            border-radius: 6px;
-            font-weight: bold;
-            background: #2e7d32;
-            color: white;
-            font-size: 12px;
-        }
-
+        body { margin: 0; background: #111; color: #fff; font-family: sans-serif; text-align: center; overflow: hidden; touch-action: none; }
+        #toolbar { background: #1a1a1a; padding: 10px; display: flex; gap: 5px; justify-content: center; flex-wrap: wrap; border-bottom: 2px solid #333; }
+        .tactic-row { background: #222; padding: 5px; display: flex; gap: 4px; justify-content: center; border-bottom: 1px solid #444; overflow-x: auto; }
+        
+        button { padding: 8px 10px; border: none; border-radius: 4px; font-weight: bold; background: #2e7d32; color: white; font-size: 10px; cursor: pointer; }
         .secondary { background: #0288d1; }
         .danger { background: #c62828; }
-        .active { outline: 3px solid #fff; }
+        .active { outline: 2px solid #fff; }
 
-        /* O CAMPO BASEADO NA SUA IMAGEM */
         #field-container {
-            position: relative;
-            width: 90vw;
-            height: 75vh;
-            margin: 15px auto;
+            position: relative; width: 92vw; height: 65vh; margin: 10px auto;
             background-color: #1b5e20;
-            /* Gramado listrado via CSS */
             background-image: linear-gradient(#2e7d32 50%, #1b5e20 50%);
             background-size: 100% 10%;
-            border: 4px solid #444;
-            border-radius: 8px;
-            overflow: hidden;
+            border: 4px solid #444; border-radius: 8px; overflow: hidden;
         }
 
-        /* SVG das marcações do campo para garantir perfeição */
-        #pitch-lines {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 1;
-        }
-
-        canvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 5; /* Onde você desenha as setas */
-        }
+        #pitch-lines { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
+        canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 5; }
 
         .player {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            position: absolute;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            z-index: 10;
-            border: 2px solid white;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.4);
-            touch-action: none;
+            width: 28px; height: 28px; border-radius: 50%; position: absolute;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: bold; z-index: 10; border: 2px solid white;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.4); touch-action: none; font-size: 11px;
+            transition: left 0.3s ease, top 0.3s ease;
         }
-
         .teamA { background: #ffd600; color: #000; border-color: #000; }
         .teamB { background: #1565c0; color: #fff; }
     </style>
@@ -96,26 +39,35 @@
 <body>
 
     <div id="toolbar">
-        <button onclick="addPlayer('A')">🟡 + Time A</button>
-        <button onclick="addPlayer('B')">🔵 + Time B</button>
         <button id="btn-arrow" class="secondary" onclick="setMode('arrow')">➡️ Seta</button>
         <button id="btn-pass" class="secondary" onclick="setMode('pass')">🔗 Passe</button>
-        <button class="danger" onclick="window.location.reload()">🧹 Limpar</button>
+        <button class="danger" onclick="location.reload()">🧹 Reset</button>
+    </div>
+
+    <div class="tactic-row">
+        <span style="font-size: 10px;">Time A:</span>
+        <button onclick="applyTactic('A', '442')">442</button>
+        <button onclick="applyTactic('A', '433')">433</button>
+        <button onclick="applyTactic('A', '352')">352</button>
+        <button onclick="addSingle('A')" style="background:#555">+1</button>
+    </div>
+
+    <div class="tactic-row">
+        <span style="font-size: 10px;">Time B:</span>
+        <button onclick="applyTactic('B', '442')" style="background:#0d47a1">442</button>
+        <button onclick="applyTactic('B', '433')" style="background:#0d47a1">433</button>
+        <button onclick="applyTactic('B', '352')" style="background:#0d47a1">352</button>
+        <button onclick="addSingle('B')" style="background:#555">+1</button>
     </div>
 
     <div id="field-container">
         <svg id="pitch-lines" viewBox="0 0 100 150" xmlns="http://www.w3.org/2000/svg">
-            <g fill="none" stroke="white" stroke-width="0.8" opacity="0.8">
+            <g fill="none" stroke="white" stroke-width="0.8" opacity="0.7">
                 <rect x="5" y="5" width="90" height="140" />
                 <line x1="5" y1="75" x2="95" y2="75" />
                 <circle cx="50" cy="75" r="12" />
-                <circle cx="50" cy="75" r="0.5" fill="white" />
                 <rect x="25" y="5" width="50" height="15" />
-                <rect x="35" y="5" width="30" height="5" />
-                <path d="M 40 20 A 10 10 0 0 0 60 20" />
                 <rect x="25" y="130" width="50" height="15" />
-                <rect x="35" y="140" width="30" height="5" />
-                <path d="M 40 130 A 10 10 0 0 1 60 130" />
             </g>
         </svg>
         <canvas id="canvas"></canvas>
@@ -125,18 +77,56 @@
     const canvas = document.getElementById("canvas");
     const ctx = canvas.getContext("2d");
     const container = document.getElementById("field-container");
-    let mode = null;
-    let drawing = false;
-    let startX, startY;
+    let mode = null, drawing = false, startX, startY;
 
-    function initCanvas() {
-        canvas.width = container.clientWidth;
-        canvas.height = container.clientHeight;
+    // Coordenadas base (0-100 x 0-150)
+    const baseFormations = {
+        "442": [[50,135], [20,115],[40,115],[60,115],[80,115], [20,95],[40,95],[60,95],[80,95], [40,80],[60,80]],
+        "433": [[50,135], [20,115],[40,115],[60,115],[80,115], [30,95],[50,95],[70,95], [20,80],[50,78],[80,80]],
+        "352": [[50,135], [30,115],[50,115],[70,115], [15,95],[35,95],[50,95],[65,95],[85,95], [40,80],[60,80]]
+    };
+
+    function initCanvas() { canvas.width = container.clientWidth; canvas.height = container.clientHeight; }
+
+    function applyTactic(team, tactic) {
+        document.querySelectorAll('.team' + team).forEach(p => p.remove());
+        let pos = JSON.parse(JSON.stringify(baseFormations[tactic]));
+        
+        // Inverte posições para o Time B (fica no topo)
+        if(team === 'B') pos = pos.map(p => [p[0], 150 - p[1]]);
+
+        pos.forEach((p, i) => createPlayer(team, i + 1, p[0], p[1]));
+    }
+
+    function addSingle(team) {
+        const num = document.querySelectorAll('.team' + team).length + 1;
+        createPlayer(team, num, 50, team === 'A' ? 80 : 20);
+    }
+
+    function createPlayer(team, num, x, y) {
+        const p = document.createElement('div');
+        p.className = 'player team' + team;
+        p.innerText = num;
+        p.style.left = x + '%'; p.style.top = (y/150*100) + '%';
+        container.appendChild(p);
+        makeDraggable(p);
+    }
+
+    function makeDraggable(el) {
+        let isDragging = false;
+        el.addEventListener("touchstart", (e) => { isDragging = true; el.style.transition = "none"; e.stopPropagation(); });
+        window.addEventListener("touchmove", (e) => {
+            if(!isDragging) return;
+            const t = e.touches[0], rect = container.getBoundingClientRect();
+            el.style.left = (t.clientX - rect.left - 14) + 'px';
+            el.style.top = (t.clientY - rect.top - 14) + 'px';
+        }, {passive: false});
+        window.addEventListener("touchend", () => isDragging = false);
     }
 
     function setMode(m) {
         mode = (mode === m) ? null : m;
-        document.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('#toolbar button').forEach(b => b.classList.remove('active'));
         if(mode) document.getElementById('btn-'+mode).classList.add('active');
     }
 
@@ -146,57 +136,17 @@
         return [t.clientX - rect.left, t.clientY - rect.top];
     }
 
-    canvas.addEventListener("touchstart", (e) => { 
-        if(!mode) return;
-        drawing = true;
-        [startX, startY] = getXY(e);
-    });
-
+    canvas.addEventListener("touchstart", (e) => { if(mode) { drawing=true; [startX, startY] = getXY(e); }});
     canvas.addEventListener("touchend", (e) => {
-        if(!drawing) return;
-        drawing = false;
+        if(!drawing) return; drawing = false;
         const [endX, endY] = getXY(e.changedTouches[0]);
         ctx.strokeStyle = mode === 'arrow' ? '#ff1744' : '#fff';
         ctx.setLineDash(mode === 'pass' ? [10, 10] : []);
         ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.moveTo(startX, startY);
-        ctx.lineTo(endX, endY);
-        ctx.stroke();
-        
-        if(mode === 'arrow') {
-            const angle = Math.atan2(endY-startY, endX-startX);
-            ctx.fillStyle = '#ff1744';
-            ctx.beginPath();
-            ctx.moveTo(endX, endY);
-            ctx.lineTo(endX - 12*Math.cos(angle-0.5), endY - 12*Math.sin(angle-0.5));
-            ctx.lineTo(endX - 12*Math.cos(angle+0.5), endY - 12*Math.sin(angle+0.5));
-            ctx.fill();
-        }
-        ctx.setLineDash([]);
+        ctx.beginPath(); ctx.moveTo(startX, startY); ctx.lineTo(endX, endY); ctx.stroke();
     });
 
-    function addPlayer(team) {
-        const p = document.createElement('div');
-        p.className = 'player ' + (team === 'A' ? 'teamA' : 'teamB');
-        p.innerText = team;
-        p.style.left = '45%'; p.style.top = '45%';
-        container.appendChild(p);
-        
-        let isDragging = false;
-        p.addEventListener("touchstart", () => isDragging = true);
-        window.addEventListener("touchmove", (e) => {
-            if(!isDragging) return;
-            const t = e.touches[0];
-            const rect = container.getBoundingClientRect();
-            p.style.left = (t.clientX - rect.left - 16) + 'px';
-            p.style.top = (t.clientY - rect.top - 16) + 'px';
-        }, {passive: false});
-        window.addEventListener("touchend", () => isDragging = false);
-    }
-
     window.onload = initCanvas;
-    window.onresize = initCanvas;
 </script>
 </body>
 </html>
