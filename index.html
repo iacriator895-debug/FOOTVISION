@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>FootVision AI — Editor Tático Profissional</title>
+<title>FootVision AI — Análise de Desempenho</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
@@ -11,33 +11,48 @@ body {
   background: #0b6623;
   font-family: Arial, Helvetica, sans-serif;
   color: white;
-  text-align: center;
 }
 
 h1 {
+  text-align: center;
   margin: 10px 0;
 }
 
-#toolbar {
-  margin: 10px;
+#layout {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
 }
 
-button {
-  padding: 8px 12px;
-  margin: 4px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
+#videoPanel {
+  width: 100%;
+  max-width: 600px;
+  padding: 10px;
+}
+
+#videoPanel input {
+  width: 100%;
+  padding: 8px;
+  margin-bottom: 5px;
+}
+
+#videoPanel button {
+  width: 100%;
+  padding: 8px;
   font-weight: bold;
+  cursor: pointer;
+}
+
+#fieldPanel {
+  width: 100%;
+  max-width: 900px;
+  padding: 10px;
 }
 
 #field {
   position: relative;
-  width: 90vw;
-  max-width: 900px;
-  height: 55vw;
-  max-height: 550px;
-  margin: auto;
+  width: 100%;
+  height: 520px;
   background: linear-gradient(
     to right,
     #0b6623 0%,
@@ -53,6 +68,7 @@ button {
 .player {
   width: 32px;
   height: 32px;
+  background: #ffcc00;
   border-radius: 50%;
   position: absolute;
   cursor: grab;
@@ -61,7 +77,6 @@ button {
   justify-content: center;
   font-weight: bold;
   color: black;
-  background: #ffcc00;
 }
 
 .player.away {
@@ -75,31 +90,61 @@ svg {
   height: 100%;
   pointer-events: none;
 }
+
+button {
+  margin: 4px 2px;
+  padding: 6px 10px;
+}
 </style>
 </head>
 
 <body>
 
-<h1>FootVision AI — Editor Tático Profissional</h1>
+<h1>FootVision AI — Análise de Desempenho</h1>
 
-<div id="toolbar">
-  <button onclick="addPlayer('home')">+ Jogador Time A</button>
-  <button onclick="addPlayer('away')">+ Jogador Time B</button>
-  <button onclick="mode='arrow'">Modo Setas</button>
-  <button onclick="mode='line'">Modo Linha</button>
-</div>
+<div id="layout">
 
-<div id="field">
-  <svg id="drawLayer"></svg>
+  <!-- VÍDEO -->
+  <div id="videoPanel">
+    <input type="text" id="ytLink" placeholder="Cole o link do YouTube aqui">
+    <button onclick="loadVideo()">Carregar Vídeo</button>
+    <iframe id="ytPlayer" width="100%" height="315"
+      frameborder="0"
+      allow="autoplay; encrypted-media"
+      allowfullscreen>
+    </iframe>
+  </div>
+
+  <!-- CAMPO -->
+  <div id="fieldPanel">
+    <div>
+      <button onclick="addPlayer('home')">+ Jogador A</button>
+      <button onclick="addPlayer('away')">+ Jogador B</button>
+      <button onclick="mode='arrow'">Seta</button>
+      <button onclick="mode='line'">Linha</button>
+    </div>
+
+    <div id="field">
+      <svg id="drawLayer"></svg>
+    </div>
+  </div>
+
 </div>
 
 <script>
 const field = document.getElementById("field");
 const svg = document.getElementById("drawLayer");
-
 let mode = null;
 let startX = 0;
 let startY = 0;
+
+function loadVideo() {
+  const url = document.getElementById("ytLink").value;
+  const id = url.split("v=")[1]?.split("&")[0];
+  if (!id) return alert("Link inválido");
+  document.getElementById("ytPlayer").src =
+    "https://www.youtube.com/embed/" + id;
+}
 
 function addPlayer(team) {
   const p = document.createElement("div");
@@ -133,34 +178,16 @@ field.addEventListener("mousedown", e => {
 
 field.addEventListener("mouseup", e => {
   if (!mode) return;
-
-  const endX = e.offsetX;
-  const endY = e.offsetY;
-
   const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
   line.setAttribute("x1", startX);
   line.setAttribute("y1", startY);
-  line.setAttribute("x2", endX);
-  line.setAttribute("y2", endY);
+  line.setAttribute("x2", e.offsetX);
+  line.setAttribute("y2", e.offsetY);
   line.setAttribute("stroke", mode === "arrow" ? "yellow" : "white");
   line.setAttribute("stroke-width", 3);
-
-  if (mode === "arrow") {
-    line.setAttribute("marker-end", "url(#arrow)");
-  }
-
   svg.appendChild(line);
 });
 </script>
-
-<svg width="0" height="0">
-<defs>
-  <marker id="arrow" markerWidth="10" markerHeight="10" refX="5" refY="5"
-    orient="auto-start-reverse">
-    <path d="M0,0 L10,5 L0,10 z" fill="yellow" />
-  </marker>
-</defs>
-</svg>
 
 </body>
 </html>
