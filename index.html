@@ -37,19 +37,32 @@
 
         .secondary { background: #0288d1; }
         .danger { background: #c62828; }
-        .active { outline: 3px solid #fff; box-shadow: 0 0 10px rgba(255,255,255,0.5); }
+        .active { outline: 3px solid #fff; }
 
-        /* CONTAINER DO CAMPO - DESIGN DA IMAGEM */
+        /* O CAMPO BASEADO NA SUA IMAGEM */
         #field-container {
             position: relative;
             width: 90vw;
             height: 75vh;
-            margin: 10px auto;
-            background: #1b5e20;
+            margin: 15px auto;
+            background-color: #1b5e20;
+            /* Gramado listrado via CSS */
+            background-image: linear-gradient(#2e7d32 50%, #1b5e20 50%);
+            background-size: 100% 10%;
             border: 4px solid #444;
-            border-radius: 5px;
+            border-radius: 8px;
             overflow: hidden;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+        }
+
+        /* SVG das marcações do campo para garantir perfeição */
+        #pitch-lines {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
         }
 
         canvas {
@@ -58,7 +71,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            z-index: 5;
+            z-index: 5; /* Onde você desenha as setas */
         }
 
         .player {
@@ -74,7 +87,6 @@
             border: 2px solid white;
             box-shadow: 0 4px 6px rgba(0,0,0,0.4);
             touch-action: none;
-            font-size: 14px;
         }
 
         .teamA { background: #ffd600; color: #000; border-color: #000; }
@@ -84,14 +96,28 @@
 <body>
 
     <div id="toolbar">
-        <button onclick="addPlayer('A')">🟢 Time A</button>
-        <button onclick="addPlayer('B')">🔵 Time B</button>
+        <button onclick="addPlayer('A')">🟡 + Time A</button>
+        <button onclick="addPlayer('B')">🔵 + Time B</button>
         <button id="btn-arrow" class="secondary" onclick="setMode('arrow')">➡️ Seta</button>
         <button id="btn-pass" class="secondary" onclick="setMode('pass')">🔗 Passe</button>
         <button class="danger" onclick="window.location.reload()">🧹 Limpar</button>
     </div>
 
     <div id="field-container">
+        <svg id="pitch-lines" viewBox="0 0 100 150" xmlns="http://www.w3.org/2000/svg">
+            <g fill="none" stroke="white" stroke-width="0.8" opacity="0.8">
+                <rect x="5" y="5" width="90" height="140" />
+                <line x1="5" y1="75" x2="95" y2="75" />
+                <circle cx="50" cy="75" r="12" />
+                <circle cx="50" cy="75" r="0.5" fill="white" />
+                <rect x="25" y="5" width="50" height="15" />
+                <rect x="35" y="5" width="30" height="5" />
+                <path d="M 40 20 A 10 10 0 0 0 60 20" />
+                <rect x="25" y="130" width="50" height="15" />
+                <rect x="35" y="140" width="30" height="5" />
+                <path d="M 40 130 A 10 10 0 0 1 60 130" />
+            </g>
+        </svg>
         <canvas id="canvas"></canvas>
     </div>
 
@@ -99,77 +125,15 @@
     const canvas = document.getElementById("canvas");
     const ctx = canvas.getContext("2d");
     const container = document.getElementById("field-container");
-    
     let mode = null;
     let drawing = false;
     let startX, startY;
 
-    // DESENHO DO CAMPO IGUAL À IMAGEM DE REFERÊNCIA
-    function drawPitch() {
+    function initCanvas() {
         canvas.width = container.clientWidth;
         canvas.height = container.clientHeight;
-        const w = canvas.width;
-        const h = canvas.height;
-
-        // 1. Gramado listrado (Horizontal como na imagem)
-        const stripes = 12;
-        for (let i = 0; i < stripes; i++) {
-            ctx.fillStyle = i % 2 === 0 ? "#2e7d32" : "#1b5e20";
-            ctx.fillRect(0, (h / stripes) * i, w, h / stripes);
-        }
-
-        // 2. Linhas Brancas
-        ctx.strokeStyle = "rgba(255,255,255,0.7)";
-        ctx.lineWidth = 2;
-
-        // Borda externa
-        ctx.strokeRect(10, 10, w - 20, h - 20);
-
-        // Linha de meio campo (Horizontal)
-        ctx.beginPath();
-        ctx.moveTo(10, h / 2);
-        ctx.lineTo(w - 10, h / 2);
-        ctx.stroke();
-
-        // Círculo central
-        ctx.beginPath();
-        ctx.arc(w / 2, h / 2, w * 0.15, 0, Math.PI * 2);
-        ctx.stroke();
-        
-        // Ponto central
-        ctx.fillStyle = "white";
-        ctx.beginPath();
-        ctx.arc(w/2, h/2, 2, 0, Math.PI*2);
-        ctx.fill();
-
-        // Áreas de Gol (Superior e Inferior)
-        const boxW = w * 0.6;
-        const boxH = h * 0.12;
-        const smallBoxW = w * 0.3;
-        const smallBoxH = h * 0.04;
-
-        // Área Grande Superior
-        ctx.strokeRect(w/2 - boxW/2, 10, boxW, boxH);
-        // Pequena Área Superior
-        ctx.strokeRect(w/2 - smallBoxW/2, 10, smallBoxW, smallBoxH);
-        
-        // Área Grande Inferior
-        ctx.strokeRect(w/2 - boxW/2, h - boxH - 10, boxW, boxH);
-        // Pequena Área Inferior
-        ctx.strokeRect(w/2 - smallBoxW/2, h - smallBoxH - 10, smallBoxW, smallBoxH);
-
-        // Meia-lua Superior
-        ctx.beginPath();
-        ctx.arc(w/2, 10 + boxH*0.8, w*0.1, 0, Math.PI);
-        ctx.stroke();
-
-        // Meia-lua Inferior
-        ctx.beginPath();
-        ctx.arc(w/2, h - 10 - boxH*0.8, w*0.1, Math.PI, 0);
-        ctx.stroke();
     }
 
-    // --- FUNÇÕES DE INTERAÇÃO ---
     function setMode(m) {
         mode = (mode === m) ? null : m;
         document.querySelectorAll('button').forEach(b => b.classList.remove('active'));
@@ -192,11 +156,9 @@
         if(!drawing) return;
         drawing = false;
         const [endX, endY] = getXY(e.changedTouches[0]);
-        
         ctx.strokeStyle = mode === 'arrow' ? '#ff1744' : '#fff';
-        ctx.setLineDash(mode === 'pass' ? [8, 8] : []);
+        ctx.setLineDash(mode === 'pass' ? [10, 10] : []);
         ctx.lineWidth = 3;
-        
         ctx.beginPath();
         ctx.moveTo(startX, startY);
         ctx.lineTo(endX, endY);
@@ -233,7 +195,8 @@
         window.addEventListener("touchend", () => isDragging = false);
     }
 
-    window.onload = drawPitch;
+    window.onload = initCanvas;
+    window.onresize = initCanvas;
 </script>
 </body>
 </html>
