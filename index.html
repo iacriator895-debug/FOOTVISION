@@ -13,6 +13,7 @@ body {
     text-align: center;
     overflow: hidden;
 }
+
 #toolbar, #schemes {
     background: #1a1a1a;
     padding: 10px;
@@ -22,6 +23,7 @@ body {
     flex-wrap: wrap;
     border-bottom: 2px solid #333;
 }
+
 button {
     padding: 10px 14px;
     border: none;
@@ -32,9 +34,11 @@ button {
     font-size: 12px;
     cursor: pointer;
 }
+
 .secondary { background: #0288d1; }
 .danger { background: #c62828; }
 .active { outline: 3px solid #fff; }
+
 #field-container {
     position: relative;
     width: 100vw;
@@ -48,6 +52,7 @@ button {
     overflow: hidden;
     touch-action: none;
 }
+
 #pitch-lines {
     position: absolute;
     top: 0;
@@ -57,6 +62,7 @@ button {
     pointer-events: none;
     z-index: 1;
 }
+
 canvas {
     position: absolute;
     top: 0;
@@ -65,6 +71,7 @@ canvas {
     height: 100%;
     z-index: 5;
 }
+
 .player {
     width: 32px;
     height: 32px;
@@ -81,8 +88,9 @@ canvas {
     touch-action: none;
     user-select: none;
 }
-.teamHome { background: #ffd600; color: #000; border-color: #000; } 
-.teamAway { background: #1565c0; color: #fff; border-color: #fff; } 
+
+.teamHome { background: #ffd600; color: #000; border-color: #000; } /* TIME DA CASA */
+.teamAway { background: #1565c0; color: #fff; border-color: #fff; } /* TIME VISITANTE */
 </style>
 </head>
 <body>
@@ -91,9 +99,6 @@ canvas {
     <button id="btn-arrow" class="secondary" onclick="setMode('arrow')">➡️ Seta</button>
     <button id="btn-pass" class="secondary" onclick="setMode('pass')">🔗 Passe</button>
     <button class="danger" onclick="clearCanvas()">🧹 Limpar Linhas</button>
-    <button onclick="saveSetup()">💾 Save</button>
-    <button onclick="loadSetup()">📂 Load</button>
-    <button onclick="exportPNG()">📤 Export</button>
 </div>
 
 <div id="schemes">
@@ -124,78 +129,91 @@ canvas {
     <canvas id="canvas"></canvas>
 </div>
 
-<input type="file" id="file-input" style="display:none" accept=".json">
-
 <script>
-const canvas=document.getElementById("canvas");
-const ctx=canvas.getContext("2d");
-const container=document.getElementById("field-container");
-let mode=null,drawing=false,startX=0,startY=0,lines=[],players=[];
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+const container = document.getElementById("field-container");
+let mode = null;
+let drawing = false;
+let startX = 0, startY = 0;
+let lines = [];
+let players = [];
 
-function initCanvas(){ 
-    canvas.width=container.clientWidth; 
-    canvas.height=container.clientHeight; 
-    redrawLines(); 
+function initCanvas(){
+    canvas.width = container.clientWidth;
+    canvas.height = container.clientHeight;
+    redrawLines();
 }
-window.onload=function(){ initCanvas(); applyDefaultScheme(); }
-window.onresize=initCanvas;
+window.onload = function(){
+    initCanvas();
+    applyDefaultScheme();
+};
+window.onresize = initCanvas;
 
-function setMode(m){ 
-    mode=(mode===m)?null:m; 
-    document.querySelectorAll('button').forEach(b=>b.classList.remove('active')); 
-    if(mode) document.getElementById('btn-'+mode).classList.add('active'); 
+function setMode(m){
+    mode = (mode===m)?null:m;
+    document.querySelectorAll('button').forEach(b=>b.classList.remove('active'));
+    if(mode) document.getElementById('btn-'+mode).classList.add('active');
 }
-function getXY(e){ 
-    const rect=canvas.getBoundingClientRect(); 
-    const t=e.touches ? e.touches[0]:e; 
-    return [t.clientX-rect.left, t.clientY-rect.top]; 
+
+function getXY(e){
+    const rect = canvas.getBoundingClientRect();
+    const t = e.touches ? e.touches[0] : e;
+    return [t.clientX - rect.left, t.clientY - rect.top];
 }
+
 function drawLineOnCanvas(x1,y1,x2,y2,m,save=true){
-    ctx.strokeStyle=m==='arrow'?'#ff1744':'#fff'; 
-    ctx.setLineDash(m==='pass'?[10,10]:[]); 
-    ctx.lineWidth=3; 
-    ctx.beginPath(); 
-    ctx.moveTo(x1,y1); 
-    ctx.lineTo(x2,y2); 
-    ctx.stroke(); 
-    if(m==='arrow'){ 
-        const angle=Math.atan2(y2-y1,x2-x1); 
-        const head=Math.min(canvas.width,canvas.height)/40; 
-        ctx.fillStyle='#ff1744'; 
-        ctx.beginPath(); 
-        ctx.moveTo(x2,y2); 
-        ctx.lineTo(x2-head*Math.cos(angle-0.5),y2-head*Math.sin(angle-0.5)); 
-        ctx.lineTo(x2-head*Math.cos(angle+0.5),y2-head*Math.sin(angle+0.5)); 
-        ctx.fill(); 
-    } 
-    ctx.setLineDash([]); 
-    if(save) lines.push({startX:x1,startY:y1,endX:x2,endY:y2,mode:m}); 
+    ctx.strokeStyle = m==='arrow'?'#ff1744':'#fff';
+    ctx.setLineDash(m==='pass'?[10,10]:[]);
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(x1,y1);
+    ctx.lineTo(x2,y2);
+    ctx.stroke();
+    if(m==='arrow'){
+        const angle = Math.atan2(y2-y1,x2-x1);
+        const head = Math.min(canvas.width,canvas.height)/40;
+        ctx.fillStyle='#ff1744';
+        ctx.beginPath();
+        ctx.moveTo(x2,y2);
+        ctx.lineTo(x2-head*Math.cos(angle-0.5),y2-head*Math.sin(angle-0.5));
+        ctx.lineTo(x2-head*Math.cos(angle+0.5),y2-head*Math.sin(angle+0.5));
+        ctx.fill();
+    }
+    ctx.setLineDash([]);
+    if(save) lines.push({startX:x1,startY:y1,endX:x2,endY:y2,mode:m});
 }
-function redrawLines(){ 
-    ctx.clearRect(0,0,canvas.width,canvas.height); 
-    for(const l of lines) drawLineOnCanvas(l.startX,l.startY,l.endX,l.endY,l.mode,false); 
-}
-function startDraw(e){ 
-    if(!mode) return; 
-    drawing=true; 
-    [startX,startY]=getXY(e); 
-    e.preventDefault(); 
-}
-function endDraw(e){ 
-    if(!drawing) return; 
-    drawing=false; 
-    const [endX,endY]=getXY(e); 
-    drawLineOnCanvas(startX,startY,endX,endY,mode); 
-    e.preventDefault(); 
-}
-canvas.addEventListener("mousedown",startDraw); 
-canvas.addEventListener("touchstart",startDraw,{passive:false});
-canvas.addEventListener("mouseup",endDraw); 
-canvas.addEventListener("touchend",endDraw);
-function clearCanvas(){ lines=[]; redrawLines(); }
 
-// Jogadores
-function addPlayer(xPercent,yPercent,team,number){
+function redrawLines(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    for(const l of lines) drawLineOnCanvas(l.startX,l.startY,l.endX,l.endY,l.mode,false);
+}
+
+canvas.addEventListener("mousedown", startDraw);
+canvas.addEventListener("touchstart", startDraw,{passive:false});
+canvas.addEventListener("mouseup", endDraw);
+canvas.addEventListener("touchend", endDraw);
+
+function startDraw(e){
+    if(!mode) return;
+    drawing=true;
+    [startX,startY]=getXY(e);
+    e.preventDefault();
+}
+function endDraw(e){
+    if(!drawing) return;
+    drawing=false;
+    const [endX,endY]=getXY(e);
+    drawLineOnCanvas(startX,startY,endX,endY,mode);
+    e.preventDefault();
+}
+function clearCanvas(){
+    lines=[];
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+}
+
+// Função de adicionar jogadores
+function addPlayer(xPercent, yPercent, team, number){
     const p=document.createElement('div');
     p.className='player '+(team==='Home'?'teamHome':'teamAway');
     p.innerText=(team==='Home'?'C':'V')+number;
@@ -203,26 +221,31 @@ function addPlayer(xPercent,yPercent,team,number){
     p.style.top=yPercent+'%';
     container.appendChild(p);
     players.push(p);
+
     let isDragging=false;
-    function move(e){ 
-        if(!isDragging) return; 
-        const t=e.touches ? e.touches[0]:e; 
-        const rect=container.getBoundingClientRect(); 
-        p.style.left=(t.clientX-rect.left-16)+'px'; 
-        p.style.top=(t.clientY-rect.top-16)+'px'; 
-        e.preventDefault(); 
+    function move(e){
+        if(!isDragging) return;
+        const t=e.touches ? e.touches[0]:e;
+        const rect=container.getBoundingClientRect();
+        p.style.left=(t.clientX-rect.left-16)+'px';
+        p.style.top=(t.clientY-rect.top-16)+'px';
+        e.preventDefault();
     }
     function stopMove(e){ isDragging=false; e.preventDefault(); }
     p.addEventListener("mousedown",()=>{ isDragging=true; });
     p.addEventListener("touchstart",()=>{ isDragging=true; });
-    window.addEventListener("mousemove",move);
-    window.addEventListener("touchmove",move,{passive:false});
-    window.addEventListener("mouseup",stopMove);
-    window.addEventListener("touchend",stopMove);
+    window.addEventListener("mousemove", move);
+    window.addEventListener("touchmove", move,{passive:false});
+    window.addEventListener("mouseup", stopMove);
+    window.addEventListener("touchend", stopMove);
 }
-function clearPlayers(){ for(const p of players) p.remove(); players=[]; }
 
-// Esquemas
+function clearPlayers(){
+    for(const p of players) p.remove();
+    players=[];
+}
+
+// Esquemas táticos
 const schemes={
 '4-4-2':[ ['Home',50,90], ['Home',20,70], ['Home',40,70], ['Home',60,70], ['Home',80,70], ['Home',20,50], ['Home',40,50], ['Home',60,50], ['Home',80,50], ['Home',35,20], ['Home',65,20] ],
 '4-3-3':[ ['Home',50,90], ['Home',20,70], ['Home',40,70], ['Home',60,70], ['Home',80,70], ['Home',30,50], ['Home',50,50], ['Home',70,50], ['Home',20,20], ['Home',50,20], ['Home',80,20] ],
@@ -233,109 +256,23 @@ const schemes={
 '3-4-3':[ ['Home',50,90], ['Home',25,70], ['Home',50,70], ['Home',75,70], ['Home',20,50], ['Home',40,50], ['Home',60,50], ['Home',80,50], ['Home',20,20], ['Home',50,20], ['Home',80,20] ]
 };
 
+// Aplicar esquema padrão para CASA e VISITANTE
 function applyDefaultScheme(){
     clearPlayers();
-    const homeScheme=schemes['4-4-2'];
-    const awayScheme=homeScheme.map(p=>['Away',p[1],150-p[2]]);
+    const homeScheme = schemes['4-4-2'];
+    const awayScheme = homeScheme.map(p => ['Away', p[1], 150-p[2]]);
     let num=1;
-    homeScheme.forEach(p=>addPlayer(p[1],p[2],p[0],num++));
+    homeScheme.forEach(p => addPlayer(p[1], p[2], p[0], num++));
     num=1;
-    awayScheme.forEach(p=>addPlayer(p[1],p[2],p[0],num++));
+    awayScheme.forEach(p => addPlayer(p[1], p[2], p[0], num++));
 }
+
+// Botão aplicar esquema (para o time da casa apenas)
 function applyScheme(name){
     clearPlayers();
     const sch=schemes[name];
     let num=1;
-    sch.forEach(p=>addPlayer(p[1],p[2],p[0],num++));
-}
-
-// SAVE / LOAD / EXPORT
-function saveSetup(){
-    const data={players:[],lines};
-    players.forEach(p=>{
-        const rect=container.getBoundingClientRect();
-        data.players.push({
-            team:p.classList.contains('teamHome')?'Home':'Away',
-            left:p.offsetLeft/rect.width*100,
-            top:p.offsetTop/rect.height*100,
-            text:p.innerText
-        });
-    });
-    const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
-    const a=document.createElement('a');
-    a.href=URL.createObjectURL(blob);
-    a.download='tatico.json';
-    a.click();
-}
-function loadSetup(){
-    document.getElementById('file-input').click();
-}
-document.getElementById('file-input').addEventListener('change',function(){
-    const file=this.files[0];
-    if(!file) return;
-    const reader=new FileReader();
-    reader.onload=function(e){
-        const data=JSON.parse(e.target.result);
-        lines=data.lines||[];
-        clearPlayers();
-        const rect=container.getBoundingClientRect();
-        data.players.forEach(p=>{
-            addPlayer(p.left,p.top,p.team, p.text.replace(/[CV]/,''));
-        });
-        redrawLines();
-    }
-    reader.readAsText(file);
-});
-function exportPNG(){
-    const tempCanvas=document.createElement('canvas');
-    tempCanvas.width=canvas.width;
-    tempCanvas.height=canvas.height;
-    const tCtx=tempCanvas.getContext('2d');
-    const style=getComputedStyle(container);
-    tCtx.fillStyle=style.backgroundColor;
-    tCtx.fillRect(0,0,tempCanvas.width,tempCanvas.height);
-    lines.forEach(l=>{
-        drawLineOnCanvasToCtx(tCtx,l.startX,l.startY,l.endX,l.endY,l.mode);
-    });
-    players.forEach(p=>{
-        const cx=p.offsetLeft+16;
-        const cy=p.offsetTop+16;
-        tCtx.fillStyle=p.classList.contains('teamHome')?'#ffd600':'#1565c0';
-        tCtx.strokeStyle='#fff';
-        tCtx.beginPath();
-        tCtx.arc(cx,cy,16,0,Math.PI*2);
-        tCtx.fill();
-        tCtx.stroke();
-        tCtx.fillStyle=p.classList.contains('teamHome')?'#000':'#fff';
-        tCtx.font='14px sans-serif';
-        tCtx.textAlign='center';
-        tCtx.textBaseline='middle';
-        tCtx.fillText(p.innerText,cx,cy);
-    });
-    const a=document.createElement('a');
-    a.href=tempCanvas.toDataURL('image/png');
-    a.download='campo.png';
-    a.click();
-}
-function drawLineOnCanvasToCtx(ctx2,x1,y1,x2,y2,m){
-    ctx2.strokeStyle=m==='arrow'?'#ff1744':'#fff';
-    ctx2.setLineDash(m==='pass'?[10,10]:[]);
-    ctx2.lineWidth=3;
-    ctx2.beginPath();
-    ctx2.moveTo(x1,y1);
-    ctx2.lineTo(x2,y2);
-    ctx2.stroke();
-    if(m==='arrow'){
-        const angle=Math.atan2(y2-y1,x2-x1);
-        const head=Math.min(canvas.width,canvas.height)/40;
-        ctx2.fillStyle='#ff1744';
-        ctx2.beginPath();
-        ctx2.moveTo(x2,y2);
-        ctx2.lineTo(x2-head*Math.cos(angle-0.5),y2-head*Math.sin(angle-0.5));
-        ctx2.lineTo(x2-head*Math.cos(angle+0.5),y2-head*Math.sin(angle+0.5));
-        ctx2.fill();
-    }
-    ctx2.setLineDash([]);
+    sch.forEach(p => addPlayer(p[1], p[2], p[0], num++));
 }
 </script>
 </body>
