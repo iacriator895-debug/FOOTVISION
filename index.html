@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>FootVision AI — Editor Tático</title>
+    <title>FootVision AI</title>
     <style>
         body {
             margin: 0;
@@ -11,8 +11,8 @@
             color: #fff;
             font-family: sans-serif;
             text-align: center;
-            touch-action: none;
             overflow: hidden;
+            touch-action: none;
         }
 
         #toolbar {
@@ -21,45 +21,49 @@
             display: flex;
             gap: 8px;
             justify-content: center;
-            flex-wrap: wrap;
             border-bottom: 2px solid #333;
         }
 
         button {
-            padding: 12px 14px;
+            padding: 12px;
             border: none;
             border-radius: 6px;
             font-weight: bold;
-            cursor: pointer;
             background: #2e7d32;
             color: white;
-            font-size: 13px;
+            font-size: 12px;
         }
 
         .secondary { background: #0288d1; }
         .danger { background: #c62828; }
-        .active { outline: 3px solid #fff; box-shadow: 0 0 10px #fff; }
+        .active { outline: 3px solid #fff; }
 
+        /* O CAMPO AGORA É UM FUNDO FIXO */
         #field-container {
             position: relative;
-            width: 95vw;
+            width: 92vw;
             height: 75vh;
-            margin: 10px auto;
-            background: #2e7d32;
-            border: 4px solid #444;
-            border-radius: 8px;
-            overflow: hidden;
+            margin: 15px auto;
+            background-color: #2e7d32;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100%25' height='100%25' viewBox='0 0 100 150'%3E%3Crect width='100' height='150' fill='%232e7d32'/%3E%3Cg fill='none' stroke='white' stroke-width='1' opacity='0.6'%3E%3Crect x='5' y='5' width='90' height='140'/%3E%3Cline x1='5' y1='75' x2='95' y2='75'/%3E%3Ccircle cx='50' cy='75' r='15'/%3E%3Crect x='25' y='5' width='50' height='20'/%3E%3Crect x='25' y='125' width='50' height='20'/%3E%3Ccircle cx='50' cy='75' r='1' fill='white'/%3E%3C/g%3E%3C/svg%3E");
+            background-size: cover;
+            border: 3px solid #555;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
         }
 
         canvas {
-            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
             width: 100%;
             height: 100%;
+            z-index: 5;
         }
 
         .player {
-            width: 38px;
-            height: 38px;
+            width: 36px;
+            height: 36px;
             border-radius: 50%;
             position: absolute;
             display: flex;
@@ -67,25 +71,23 @@
             justify-content: center;
             font-weight: bold;
             z-index: 10;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.4);
             border: 2px solid white;
-            color: white;
-            user-select: none;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.4);
             touch-action: none;
         }
 
-        .teamA { background: #ffd600; color: #000; border-color: #000; }
-        .teamB { background: #1565c0; }
+        .teamA { background: #ffd600; color: #000; }
+        .teamB { background: #1565c0; color: #fff; }
     </style>
 </head>
 <body>
 
     <div id="toolbar">
-        <button onclick="addPlayer('A')">🟡 Time A</button>
-        <button onclick="addPlayer('B')">🔵 Time B</button>
+        <button onclick="addPlayer('A')">🟡 + Time A</button>
+        <button onclick="addPlayer('B')">🔵 + Time B</button>
         <button id="btn-arrow" class="secondary" onclick="setMode('arrow')">➡️ Seta</button>
         <button id="btn-pass" class="secondary" onclick="setMode('pass')">🔗 Passe</button>
-        <button class="danger" onclick="clearDraw()">🧹 Limpar</button>
+        <button class="danger" onclick="window.location.reload()">🧹 Limpar</button>
     </div>
 
     <div id="field-container">
@@ -101,68 +103,33 @@
     let drawing = false;
     let startX, startY;
 
-    // Função que desenha o campo profissional
-    function drawField() {
-        // Ajusta resolução do canvas
+    function initCanvas() {
         canvas.width = container.clientWidth;
         canvas.height = container.clientHeight;
-        
-        const w = canvas.width;
-        const h = canvas.height;
-
-        // Gramado com listras
-        const stripes = 10;
-        for (let i = 0; i < stripes; i++) {
-            ctx.fillStyle = i % 2 === 0 ? "#2e7d32" : "#388e3c";
-            ctx.fillRect(0, (h / stripes) * i, w, h / stripes);
-        }
-
-        // Linhas brancas
-        ctx.strokeStyle = "rgba(255,255,255,0.8)";
-        ctx.lineWidth = 3;
-
-        // Borda principal
-        ctx.strokeRect(10, 10, w - 20, h - 20);
-
-        // Meio de campo
-        ctx.beginPath();
-        ctx.moveTo(10, h / 2);
-        ctx.lineTo(w - 10, h / 2);
-        ctx.stroke();
-
-        // Círculo central
-        ctx.beginPath();
-        ctx.arc(w / 2, h / 2, h * 0.1, 0, Math.PI * 2);
-        ctx.stroke();
-
-        // Áreas
-        const areaW = w * 0.6;
-        const areaH = h * 0.12;
-        ctx.strokeRect(w/2 - areaW/2, 10, areaW, areaH); // Superior
-        ctx.strokeRect(w/2 - areaW/2, h - areaH - 10, areaW, areaH); // Inferior
     }
 
-    // Gerenciamento de modos (Seta/Passe)
     function setMode(m) {
         mode = (mode === m) ? null : m;
         document.querySelectorAll('button').forEach(b => b.classList.remove('active'));
         if(mode) document.getElementById('btn-'+mode).classList.add('active');
     }
 
-    // Coordenadas universais (Mouse e Touch)
     function getXY(e) {
         const rect = canvas.getBoundingClientRect();
         const t = e.touches ? e.touches[0] : e;
         return [t.clientX - rect.left, t.clientY - rect.top];
     }
 
-    canvas.addEventListener("mousedown", (e) => { if(mode){ drawing=true; [startX, startY] = getXY(e); }});
-    canvas.addEventListener("touchstart", (e) => { if(mode){ drawing=true; [startX, startY] = getXY(e); }});
+    canvas.addEventListener("touchstart", (e) => { 
+        if(!mode) return;
+        drawing = true;
+        [startX, startY] = getXY(e);
+    });
 
-    window.addEventListener("mouseup", (e) => {
+    canvas.addEventListener("touchend", (e) => {
         if(!drawing) return;
         drawing = false;
-        const [endX, endY] = getXY(e.changedTouches ? e.changedTouches[0] : e);
+        const [endX, endY] = getXY(e.changedTouches[0]);
         
         ctx.strokeStyle = mode === 'arrow' ? '#ff1744' : '#fff';
         ctx.setLineDash(mode === 'pass' ? [10, 10] : []);
@@ -172,6 +139,16 @@
         ctx.moveTo(startX, startY);
         ctx.lineTo(endX, endY);
         ctx.stroke();
+        
+        if(mode === 'arrow') {
+            const angle = Math.atan2(endY-startY, endX-startX);
+            ctx.fillStyle = '#ff1744';
+            ctx.beginPath();
+            ctx.moveTo(endX, endY);
+            ctx.lineTo(endX - 15*Math.cos(angle-0.5), endY - 15*Math.sin(angle-0.5));
+            ctx.lineTo(endX - 15*Math.cos(angle+0.5), endY - 15*Math.sin(angle+0.5));
+            ctx.fill();
+        }
         ctx.setLineDash([]);
     });
 
@@ -179,35 +156,22 @@
         const p = document.createElement('div');
         p.className = 'player ' + (team === 'A' ? 'teamA' : 'teamB');
         p.innerText = team;
-        p.style.left = '50%'; p.style.top = '50%';
+        p.style.left = '40%'; p.style.top = '45%';
         container.appendChild(p);
         
-        // Lógica de arrastar corrigida para mobile
         let isDragging = false;
-        const move = (e) => {
-            if(!isDragging) return;
-            const t = e.touches ? e.touches[0] : e;
-            const rect = container.getBoundingClientRect();
-            p.style.left = (t.clientX - rect.left - 19) + 'px';
-            p.style.top = (t.clientY - rect.top - 19) + 'px';
-        };
-        p.addEventListener("mousedown", () => isDragging = true);
         p.addEventListener("touchstart", () => isDragging = true);
-        window.addEventListener("mousemove", move);
-        window.addEventListener("touchmove", move, {passive: false});
-        window.addEventListener("mouseup", () => isDragging = false);
+        window.addEventListener("touchmove", (e) => {
+            if(!isDragging) return;
+            const t = e.touches[0];
+            const rect = container.getBoundingClientRect();
+            p.style.left = (t.clientX - rect.left - 18) + 'px';
+            p.style.top = (t.clientY - rect.top - 18) + 'px';
+        }, {passive: false});
         window.addEventListener("touchend", () => isDragging = false);
     }
 
-    function clearDraw() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        drawField();
-        document.querySelectorAll('.player').forEach(p => p.remove());
-    }
-
-    // Inicialização
-    window.onload = drawField;
-    window.onresize = drawField;
+    window.onload = initCanvas;
 </script>
 </body>
 </html>
