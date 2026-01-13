@@ -2,75 +2,141 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <title>FootVision AI</title>
+  <title>FootVision AI — Editor Tático</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
   <style>
     body {
       margin: 0;
       font-family: Arial, Helvetica, sans-serif;
-      background-color: #0b0f14;
-      color: #ffffff;
+      background-color: #0b6623;
+      color: #fff;
       text-align: center;
     }
 
     header {
-      background: linear-gradient(90deg, #0f2027, #203a43, #2c5364);
-      padding: 20px;
-      font-size: 24px;
+      padding: 15px;
+      font-size: 22px;
+      font-weight: bold;
+      background: #0a3f1c;
+    }
+
+    #controls {
+      margin: 10px;
+    }
+
+    button {
+      padding: 8px 12px;
+      margin: 4px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
       font-weight: bold;
     }
 
-    main {
-      padding: 40px 20px;
-    }
-
-    .pitch {
-      width: 90%;
-      max-width: 600px;
-      height: 350px;
-      margin: 30px auto;
-      background: #1e7f43;
-      border: 4px solid #ffffff;
-      border-radius: 8px;
+    #field {
       position: relative;
+      width: 90vw;
+      max-width: 800px;
+      height: 480px;
+      margin: 20px auto;
+      background: linear-gradient(
+        to right,
+        #0b6623 0%,
+        #0b6623 48%,
+        white 48%,
+        white 52%,
+        #0b6623 52%,
+        #0b6623 100%
+      );
+      border: 4px solid white;
     }
 
     .player {
-      width: 16px;
-      height: 16px;
-      background: #ffffff;
+      width: 32px;
+      height: 32px;
+      background: #ffcc00;
       border-radius: 50%;
       position: absolute;
+      cursor: grab;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      color: black;
+      user-select: none;
     }
 
-    footer {
-      opacity: 0.6;
-      font-size: 12px;
-      margin-top: 40px;
+    .away {
+      background: #ff4444;
+      color: white;
     }
   </style>
 </head>
+
 <body>
 
-  <header>⚽ FootVision AI</header>
+<header>⚽ FootVision AI — Editor Tático</header>
 
-  <main>
-    <h2>Editor Tático Profissional</h2>
-    <p>Projeto open-source para análise de jogadas e desempenho no futebol.</p>
+<div id="controls">
+  <button onclick="addPlayer('home')">+ Jogador Time A</button>
+  <button onclick="addPlayer('away')">+ Jogador Time B</button>
+</div>
 
-    <div class="pitch">
-      <div class="player" style="top: 50%; left: 45%;"></div>
-      <div class="player" style="top: 30%; left: 30%;"></div>
-      <div class="player" style="top: 70%; left: 60%;"></div>
-    </div>
+<div id="field"></div>
 
-    <p>🚧 Em construção — próximos recursos:</p>
-    <p>Setas, destaques, análise de vídeo e movimentação tática</p>
-  </main>
+<script>
+  const field = document.getElementById("field");
+  let playerCount = 0;
 
-  <footer>
-    FootVision AI • Open Source • 100% Free
-  </footer>
+  function addPlayer(team) {
+    playerCount++;
+
+    const player = document.createElement("div");
+    player.className = "player";
+    if (team === "away") player.classList.add("away");
+
+    player.innerText = playerCount;
+    player.style.left = "50%";
+    player.style.top = "50%";
+
+    enableDrag(player);
+    field.appendChild(player);
+  }
+
+  function enableDrag(el) {
+    let offsetX = 0, offsetY = 0;
+
+    el.addEventListener("mousedown", startDrag);
+    el.addEventListener("touchstart", startDrag);
+
+    function startDrag(e) {
+      e.preventDefault();
+
+      const evt = e.touches ? e.touches[0] : e;
+      offsetX = evt.clientX - el.offsetLeft;
+      offsetY = evt.clientY - el.offsetTop;
+
+      document.addEventListener("mousemove", drag);
+      document.addEventListener("touchmove", drag);
+      document.addEventListener("mouseup", stopDrag);
+      document.addEventListener("touchend", stopDrag);
+    }
+
+    function drag(e) {
+      const evt = e.touches ? e.touches[0] : e;
+      el.style.left = (evt.clientX - offsetX - field.offsetLeft) + "px";
+      el.style.top = (evt.clientY - offsetY - field.offsetTop) + "px";
+    }
+
+    function stopDrag() {
+      document.removeEventListener("mousemove", drag);
+      document.removeEventListener("touchmove", drag);
+      document.removeEventListener("mouseup", stopDrag);
+      document.removeEventListener("touchend", stopDrag);
+    }
+  }
+</script>
 
 </body>
 </html>
