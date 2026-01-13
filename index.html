@@ -1,45 +1,94 @@
 <!DOCTYPE html>
-<html lang="pt-PT">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>FootVision AI — Versão Estável</title>
+    <title>FootVision AI</title>
     <style>
-        body { margin: 0; background: #111; color: #fff; font-family: sans-serif; text-align: center; overflow: hidden; touch-action: none; }
-        
-        #toolbar { 
-            background: #1a1a1a; padding: 10px; display: flex; gap: 8px; 
-            justify-content: center; flex-wrap: wrap; border-bottom: 2px solid #333; 
+        body {
+            margin: 0;
+            background: #111;
+            color: #fff;
+            font-family: sans-serif;
+            text-align: center;
+            overflow: hidden;
+            touch-action: none;
         }
-        
-        button { 
-            padding: 12px 14px; border: none; border-radius: 6px; 
-            font-weight: bold; background: #2e7d32; color: white; 
-            font-size: 13px; cursor: pointer; transition: 0.2s;
+
+        #toolbar {
+            background: #1a1a1a;
+            padding: 10px;
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            flex-wrap: wrap;
+            border-bottom: 2px solid #333;
         }
-        
-        button:active { transform: scale(0.95); opacity: 0.8; }
+
+        button {
+            padding: 10px 14px;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            background: #2e7d32;
+            color: white;
+            font-size: 12px;
+        }
+
         .secondary { background: #0288d1; }
         .danger { background: #c62828; }
-        .active { outline: 3px solid #fff; box-shadow: 0 0 10px rgba(255,255,255,0.5); }
+        .active { outline: 3px solid #fff; }
 
+        /* O CAMPO BASEADO NA SUA IMAGEM */
         #field-container {
-            position: relative; width: 92vw; height: 75vh; margin: 10px auto;
+            position: relative;
+            width: 90vw;
+            height: 75vh;
+            margin: 15px auto;
             background-color: #1b5e20;
+            /* Gramado listrado via CSS */
             background-image: linear-gradient(#2e7d32 50%, #1b5e20 50%);
             background-size: 100% 10%;
-            border: 4px solid #444; border-radius: 8px; overflow: hidden;
+            border: 4px solid #444;
+            border-radius: 8px;
+            overflow: hidden;
         }
 
-        #pitch-lines { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
-        canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; pointer-events: auto; }
+        /* SVG das marcações do campo para garantir perfeição */
+        #pitch-lines {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 5; /* Onde você desenha as setas */
+        }
 
         .player {
-            width: 36px; height: 36px; border-radius: 50%; position: absolute;
-            display: flex; align-items: center; justify-content: center;
-            font-weight: bold; z-index: 10; border: 2px solid white;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.4); touch-action: none; font-size: 14px;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            position: absolute;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            z-index: 10;
+            border: 2px solid white;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.4);
+            touch-action: none;
         }
+
         .teamA { background: #ffd600; color: #000; border-color: #000; }
         .teamB { background: #1565c0; color: #fff; }
     </style>
@@ -56,12 +105,17 @@
 
     <div id="field-container">
         <svg id="pitch-lines" viewBox="0 0 100 150" xmlns="http://www.w3.org/2000/svg">
-            <g fill="none" stroke="white" stroke-width="0.8" opacity="0.7">
+            <g fill="none" stroke="white" stroke-width="0.8" opacity="0.8">
                 <rect x="5" y="5" width="90" height="140" />
                 <line x1="5" y1="75" x2="95" y2="75" />
                 <circle cx="50" cy="75" r="12" />
+                <circle cx="50" cy="75" r="0.5" fill="white" />
                 <rect x="25" y="5" width="50" height="15" />
+                <rect x="35" y="5" width="30" height="5" />
+                <path d="M 40 20 A 10 10 0 0 0 60 20" />
                 <rect x="25" y="130" width="50" height="15" />
+                <rect x="35" y="140" width="30" height="5" />
+                <path d="M 40 130 A 10 10 0 0 1 60 130" />
             </g>
         </svg>
         <canvas id="canvas"></canvas>
@@ -71,50 +125,18 @@
     const canvas = document.getElementById("canvas");
     const ctx = canvas.getContext("2d");
     const container = document.getElementById("field-container");
-    
-    let mode = null, drawing = false, startX, startY;
-    let countA = 0, countB = 0;
+    let mode = null;
+    let drawing = false;
+    let startX, startY;
 
     function initCanvas() {
         canvas.width = container.clientWidth;
         canvas.height = container.clientHeight;
     }
 
-    // Adiciona jogadores com numeração automática
-    function addPlayer(team) {
-        const p = document.createElement('div');
-        p.className = 'player team' + team;
-        
-        if(team === 'A') { countA++; p.innerText = countA; }
-        else { countB++; p.innerText = countB; }
-
-        p.style.left = '45%'; 
-        p.style.top = team === 'A' ? '65%' : '25%';
-        
-        container.appendChild(p);
-        makeDraggable(p);
-    }
-
-    function makeDraggable(el) {
-        let isDragging = false;
-        el.addEventListener("touchstart", (e) => { 
-            isDragging = true; 
-            e.stopPropagation(); // Impede que o canvas comece a desenhar ao tocar no jogador
-        });
-        
-        window.addEventListener("touchmove", (e) => {
-            if(!isDragging) return;
-            const t = e.touches[0], rect = container.getBoundingClientRect();
-            el.style.left = (t.clientX - rect.left - 18) + 'px';
-            el.style.top = (t.clientY - rect.top - 18) + 'px';
-        }, {passive: false});
-        
-        window.addEventListener("touchend", () => { isDragging = false; });
-    }
-
     function setMode(m) {
         mode = (mode === m) ? null : m;
-        document.querySelectorAll('#toolbar button').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('button').forEach(b => b.classList.remove('active'));
         if(mode) document.getElementById('btn-'+mode).classList.add('active');
     }
 
@@ -126,19 +148,21 @@
 
     canvas.addEventListener("touchstart", (e) => { 
         if(!mode) return;
-        drawing = true; 
+        drawing = true;
         [startX, startY] = getXY(e);
     });
 
     canvas.addEventListener("touchend", (e) => {
-        if(!drawing) return; 
+        if(!drawing) return;
         drawing = false;
         const [endX, endY] = getXY(e.changedTouches[0]);
-        
         ctx.strokeStyle = mode === 'arrow' ? '#ff1744' : '#fff';
         ctx.setLineDash(mode === 'pass' ? [10, 10] : []);
         ctx.lineWidth = 3;
-        ctx.beginPath(); ctx.moveTo(startX, startY); ctx.lineTo(endX, endY); ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(startX, startY);
+        ctx.lineTo(endX, endY);
+        ctx.stroke();
         
         if(mode === 'arrow') {
             const angle = Math.atan2(endY-startY, endX-startX);
@@ -151,6 +175,25 @@
         }
         ctx.setLineDash([]);
     });
+
+    function addPlayer(team) {
+        const p = document.createElement('div');
+        p.className = 'player ' + (team === 'A' ? 'teamA' : 'teamB');
+        p.innerText = team;
+        p.style.left = '45%'; p.style.top = '45%';
+        container.appendChild(p);
+        
+        let isDragging = false;
+        p.addEventListener("touchstart", () => isDragging = true);
+        window.addEventListener("touchmove", (e) => {
+            if(!isDragging) return;
+            const t = e.touches[0];
+            const rect = container.getBoundingClientRect();
+            p.style.left = (t.clientX - rect.left - 16) + 'px';
+            p.style.top = (t.clientY - rect.top - 16) + 'px';
+        }, {passive: false});
+        window.addEventListener("touchend", () => isDragging = false);
+    }
 
     window.onload = initCanvas;
     window.onresize = initCanvas;
