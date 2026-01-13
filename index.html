@@ -9,74 +9,73 @@
             margin: 0;
             background: #111;
             color: #fff;
-            font-family: Arial, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             text-align: center;
             touch-action: manipulation;
-            overflow: hidden; /* Evita scroll ao arrastar jogadores */
+            overflow: hidden;
         }
 
         #toolbar {
             background: #1a1a1a;
-            padding: 10px;
+            padding: 12px;
             display: flex;
             gap: 10px;
             justify-content: center;
             flex-wrap: wrap;
+            border-bottom: 2px solid #333;
         }
 
         button {
             padding: 10px 16px;
             border: none;
-            border-radius: 5px;
+            border-radius: 6px;
             font-weight: bold;
             cursor: pointer;
-            background: #00c853;
+            background: #2e7d32;
             color: white;
-            font-size: 14px;
+            transition: 0.2s;
         }
 
-        .secondary { background: #03a9f4; }
-        .danger { background: #e53935; }
-        .active { outline: 3px solid white; transform: scale(1.05); }
+        button:active { transform: scale(0.95); }
+        .secondary { background: #0288d1; }
+        .danger { background: #c62828; }
+        .active { outline: 3px solid #fff; box-shadow: 0 0 10px #fff; }
 
         #field {
             position: relative;
             width: 95vw;
-            max-width: 900px;
-            height: 60vh;
-            margin: 10px auto;
-            background: #1b5e20;
-            border-radius: 10px;
-            border: 2px solid #2e7d32;
+            max-width: 800px;
+            height: 70vh;
+            margin: 15px auto;
+            background: #2e7d32;
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
             overflow: hidden;
             touch-action: none;
+            border: 5px solid #444;
         }
 
-        canvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            z-index: 1;
-        }
+        canvas { position: absolute; top: 0; left: 0; z-index: 1; }
 
         .player {
-            width: 36px;
-            height: 36px;
+            width: 34px;
+            height: 34px;
             border-radius: 50%;
             position: absolute;
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: bold;
+            font-size: 14px;
             cursor: grab;
             z-index: 10;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.4);
             user-select: none;
-            touch-action: none;
+            border: 2px solid rgba(255,255,255,0.8);
         }
 
-        .teamA { background: #ffeb3b; color:#000; border: 2px solid #000; }
-        .teamB { background: #03a9f4; color:#fff; border: 2px solid #fff; }
+        .teamA { background: #ffd600; color: #000; } /* Amarelo */
+        .teamB { background: #1565c0; color: #fff; } /* Azul */
     </style>
 </head>
 <body>
@@ -84,8 +83,8 @@
     <h2 style="margin: 10px 0;">⚽ FootVision AI</h2>
 
     <div id="toolbar">
-        <button onclick="addPlayer('A')">+ Time A</button>
-        <button onclick="addPlayer('B')">+ Time B</button>
+        <button onclick="addPlayer('A')">🟡 Time A</button>
+        <button onclick="addPlayer('B')">🔵 Time B</button>
         <button id="btn-arrow" class="secondary" onclick="setMode('arrow')">➡️ Seta</button>
         <button id="btn-pass" class="secondary" onclick="setMode('pass')">🔗 Passe</button>
         <button class="danger" onclick="clearDraw()">🧹 Limpar</button>
@@ -112,21 +111,50 @@
     setTimeout(resize, 100);
 
     function drawField() {
-        ctx.strokeStyle = "rgba(255,255,255,0.5)";
-        ctx.lineWidth = 2;
         const w = canvas.width;
         const h = canvas.height;
 
-        ctx.strokeRect(10, 10, w - 20, h - 20);
+        // 1. Desenhar Gramado Listrado
+        const stripes = 10;
+        for (let i = 0; i < stripes; i++) {
+            ctx.fillStyle = i % 2 === 0 ? "#2e7d32" : "#388e3c";
+            ctx.fillRect(0, (h / stripes) * i, w, h / stripes);
+        }
+
+        // 2. Configuração das Linhas
+        ctx.strokeStyle = "rgba(255,255,255,0.7)";
+        ctx.lineWidth = 3;
+
+        // Linhas Laterais e Fundo
+        ctx.strokeRect(15, 15, w - 30, h - 30);
+
+        // Linha de Meio de Campo
         ctx.beginPath();
-        ctx.moveTo(w/2, 10); ctx.lineTo(w/2, h - 10);
+        ctx.moveTo(15, h / 2);
+        ctx.lineTo(w - 15, h / 2);
         ctx.stroke();
 
+        // Círculo Central
         ctx.beginPath();
-        ctx.arc(w/2, h/2, h*0.15, 0, Math.PI*2);
+        ctx.arc(w / 2, h / 2, h * 0.12, 0, Math.PI * 2);
         ctx.stroke();
+
+        // Áreas (Superior e Inferior)
+        const areaW = w * 0.6;
+        const areaH = h * 0.15;
+        
+        // Área Superior
+        ctx.strokeRect(w/2 - areaW/2, 15, areaW, areaH);
+        // Área Inferior
+        ctx.strokeRect(w/2 - areaW/2, h - areaH - 15, areaW, areaH);
+
+        // Pequena Área Superior
+        ctx.strokeRect(w/2 - areaW/4, 15, areaW/2, areaH/2);
+        // Pequena Área Inferior
+        ctx.strokeRect(w/2 - areaW/4, h - (areaH/2) - 15, areaW/2, areaH/2);
     }
 
+    // --- LÓGICA DE INTERAÇÃO (SETA, PASSE, ARRASTAR) ---
     function setMode(newMode) {
         mode = (mode === newMode) ? null : newMode;
         document.querySelectorAll('#toolbar button').forEach(b => b.classList.remove('active'));
@@ -140,11 +168,8 @@
         return [clientX - rect.left, clientY - rect.top];
     }
 
-    const startDraw = (e) => {
-        if(!mode) return;
-        drawing = true;
-        [startX, startY] = getCoords(e);
-    };
+    canvas.addEventListener("mousedown", (e) => { if(mode) { drawing = true; [startX, startY] = getCoords(e); } });
+    canvas.addEventListener("touchstart", (e) => { if(mode) { drawing = true; [startX, startY] = getCoords(e); } });
 
     const endDraw = (e) => {
         if(!drawing) return;
@@ -153,15 +178,13 @@
         drawShape(startX, startY, endX, endY);
     };
 
-    canvas.addEventListener("mousedown", startDraw);
-    canvas.addEventListener("touchstart", startDraw);
     window.addEventListener("mouseup", endDraw);
     window.addEventListener("touchend", endDraw);
 
     function drawShape(x1, y1, x2, y2) {
-        ctx.strokeStyle = mode === 'arrow' ? '#ff5252' : '#ffffff';
-        ctx.setLineDash(mode === 'pass' ? [5, 5] : []);
-        ctx.lineWidth = 3;
+        ctx.strokeStyle = mode === 'arrow' ? '#ff1744' : '#ffffff';
+        ctx.setLineDash(mode === 'pass' ? [8, 8] : []);
+        ctx.lineWidth = 4;
         ctx.beginPath();
         ctx.moveTo(x1, y1);
         ctx.lineTo(x2, y2);
@@ -174,7 +197,7 @@
             ctx.lineTo(x2 - 15 * Math.cos(angle - Math.PI/6), y2 - 15 * Math.sin(angle - Math.PI/6));
             ctx.lineTo(x2 - 15 * Math.cos(angle + Math.PI/6), y2 - 15 * Math.sin(angle + Math.PI/6));
             ctx.closePath();
-            ctx.fillStyle = '#ff5252';
+            ctx.fillStyle = '#ff1744';
             ctx.fill();
         }
         ctx.setLineDash([]);
@@ -189,8 +212,8 @@
     function addPlayer(team) {
         const p = document.createElement('div');
         p.className = 'player ' + (team === 'A' ? 'teamA' : 'teamB');
-        p.innerText = team;
-        p.style.left = '50%'; p.style.top = '50%';
+        p.innerText = team === 'A' ? 'A' : 'B';
+        p.style.left = '45%'; p.style.top = '45%';
         field.appendChild(p);
         makeDraggable(p);
     }
@@ -199,21 +222,18 @@
         let isDragging = false;
         const move = (e) => {
             if (!isDragging) return;
-            e.preventDefault();
             const rect = field.getBoundingClientRect();
             const clientX = e.touches ? e.touches[0].clientX : e.clientX;
             const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-            el.style.left = (clientX - rect.left - 18) + 'px';
-            el.style.top = (clientY - rect.top - 18) + 'px';
+            el.style.left = (clientX - rect.left - 17) + 'px';
+            el.style.top = (clientY - rect.top - 17) + 'px';
         };
-        const stop = () => isDragging = false;
-
         el.addEventListener("mousedown", () => isDragging = true);
         el.addEventListener("touchstart", () => isDragging = true);
-        window.addEventListener("mousemove", move, {passive: false});
+        window.addEventListener("mousemove", move);
         window.addEventListener("touchmove", move, {passive: false});
-        window.addEventListener("mouseup", stop);
-        window.addEventListener("touchend", stop);
+        window.addEventListener("mouseup", () => isDragging = false);
+        window.addEventListener("touchend", () => isDragging = false);
     }
 </script>
 </body>
