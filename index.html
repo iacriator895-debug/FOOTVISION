@@ -21,11 +21,12 @@
             display: flex;
             gap: 8px;
             justify-content: center;
+            flex-wrap: wrap;
             border-bottom: 2px solid #333;
         }
 
         button {
-            padding: 12px;
+            padding: 10px 14px;
             border: none;
             border-radius: 6px;
             font-weight: bold;
@@ -36,20 +37,19 @@
 
         .secondary { background: #0288d1; }
         .danger { background: #c62828; }
-        .active { outline: 3px solid #fff; }
+        .active { outline: 3px solid #fff; box-shadow: 0 0 10px rgba(255,255,255,0.5); }
 
-        /* O CAMPO AGORA É UM FUNDO FIXO */
+        /* CONTAINER DO CAMPO - DESIGN DA IMAGEM */
         #field-container {
             position: relative;
-            width: 92vw;
+            width: 90vw;
             height: 75vh;
-            margin: 15px auto;
-            background-color: #2e7d32;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100%25' height='100%25' viewBox='0 0 100 150'%3E%3Crect width='100' height='150' fill='%232e7d32'/%3E%3Cg fill='none' stroke='white' stroke-width='1' opacity='0.6'%3E%3Crect x='5' y='5' width='90' height='140'/%3E%3Cline x1='5' y1='75' x2='95' y2='75'/%3E%3Ccircle cx='50' cy='75' r='15'/%3E%3Crect x='25' y='5' width='50' height='20'/%3E%3Crect x='25' y='125' width='50' height='20'/%3E%3Ccircle cx='50' cy='75' r='1' fill='white'/%3E%3C/g%3E%3C/svg%3E");
-            background-size: cover;
-            border: 3px solid #555;
-            border-radius: 10px;
-            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            margin: 10px auto;
+            background: #1b5e20;
+            border: 4px solid #444;
+            border-radius: 5px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
         }
 
         canvas {
@@ -62,8 +62,8 @@
         }
 
         .player {
-            width: 36px;
-            height: 36px;
+            width: 32px;
+            height: 32px;
             border-radius: 50%;
             position: absolute;
             display: flex;
@@ -74,17 +74,18 @@
             border: 2px solid white;
             box-shadow: 0 4px 6px rgba(0,0,0,0.4);
             touch-action: none;
+            font-size: 14px;
         }
 
-        .teamA { background: #ffd600; color: #000; }
+        .teamA { background: #ffd600; color: #000; border-color: #000; }
         .teamB { background: #1565c0; color: #fff; }
     </style>
 </head>
 <body>
 
     <div id="toolbar">
-        <button onclick="addPlayer('A')">🟡 + Time A</button>
-        <button onclick="addPlayer('B')">🔵 + Time B</button>
+        <button onclick="addPlayer('A')">🟢 Time A</button>
+        <button onclick="addPlayer('B')">🔵 Time B</button>
         <button id="btn-arrow" class="secondary" onclick="setMode('arrow')">➡️ Seta</button>
         <button id="btn-pass" class="secondary" onclick="setMode('pass')">🔗 Passe</button>
         <button class="danger" onclick="window.location.reload()">🧹 Limpar</button>
@@ -103,11 +104,72 @@
     let drawing = false;
     let startX, startY;
 
-    function initCanvas() {
+    // DESENHO DO CAMPO IGUAL À IMAGEM DE REFERÊNCIA
+    function drawPitch() {
         canvas.width = container.clientWidth;
         canvas.height = container.clientHeight;
+        const w = canvas.width;
+        const h = canvas.height;
+
+        // 1. Gramado listrado (Horizontal como na imagem)
+        const stripes = 12;
+        for (let i = 0; i < stripes; i++) {
+            ctx.fillStyle = i % 2 === 0 ? "#2e7d32" : "#1b5e20";
+            ctx.fillRect(0, (h / stripes) * i, w, h / stripes);
+        }
+
+        // 2. Linhas Brancas
+        ctx.strokeStyle = "rgba(255,255,255,0.7)";
+        ctx.lineWidth = 2;
+
+        // Borda externa
+        ctx.strokeRect(10, 10, w - 20, h - 20);
+
+        // Linha de meio campo (Horizontal)
+        ctx.beginPath();
+        ctx.moveTo(10, h / 2);
+        ctx.lineTo(w - 10, h / 2);
+        ctx.stroke();
+
+        // Círculo central
+        ctx.beginPath();
+        ctx.arc(w / 2, h / 2, w * 0.15, 0, Math.PI * 2);
+        ctx.stroke();
+        
+        // Ponto central
+        ctx.fillStyle = "white";
+        ctx.beginPath();
+        ctx.arc(w/2, h/2, 2, 0, Math.PI*2);
+        ctx.fill();
+
+        // Áreas de Gol (Superior e Inferior)
+        const boxW = w * 0.6;
+        const boxH = h * 0.12;
+        const smallBoxW = w * 0.3;
+        const smallBoxH = h * 0.04;
+
+        // Área Grande Superior
+        ctx.strokeRect(w/2 - boxW/2, 10, boxW, boxH);
+        // Pequena Área Superior
+        ctx.strokeRect(w/2 - smallBoxW/2, 10, smallBoxW, smallBoxH);
+        
+        // Área Grande Inferior
+        ctx.strokeRect(w/2 - boxW/2, h - boxH - 10, boxW, boxH);
+        // Pequena Área Inferior
+        ctx.strokeRect(w/2 - smallBoxW/2, h - smallBoxH - 10, smallBoxW, smallBoxH);
+
+        // Meia-lua Superior
+        ctx.beginPath();
+        ctx.arc(w/2, 10 + boxH*0.8, w*0.1, 0, Math.PI);
+        ctx.stroke();
+
+        // Meia-lua Inferior
+        ctx.beginPath();
+        ctx.arc(w/2, h - 10 - boxH*0.8, w*0.1, Math.PI, 0);
+        ctx.stroke();
     }
 
+    // --- FUNÇÕES DE INTERAÇÃO ---
     function setMode(m) {
         mode = (mode === m) ? null : m;
         document.querySelectorAll('button').forEach(b => b.classList.remove('active'));
@@ -132,8 +194,8 @@
         const [endX, endY] = getXY(e.changedTouches[0]);
         
         ctx.strokeStyle = mode === 'arrow' ? '#ff1744' : '#fff';
-        ctx.setLineDash(mode === 'pass' ? [10, 10] : []);
-        ctx.lineWidth = 4;
+        ctx.setLineDash(mode === 'pass' ? [8, 8] : []);
+        ctx.lineWidth = 3;
         
         ctx.beginPath();
         ctx.moveTo(startX, startY);
@@ -145,8 +207,8 @@
             ctx.fillStyle = '#ff1744';
             ctx.beginPath();
             ctx.moveTo(endX, endY);
-            ctx.lineTo(endX - 15*Math.cos(angle-0.5), endY - 15*Math.sin(angle-0.5));
-            ctx.lineTo(endX - 15*Math.cos(angle+0.5), endY - 15*Math.sin(angle+0.5));
+            ctx.lineTo(endX - 12*Math.cos(angle-0.5), endY - 12*Math.sin(angle-0.5));
+            ctx.lineTo(endX - 12*Math.cos(angle+0.5), endY - 12*Math.sin(angle+0.5));
             ctx.fill();
         }
         ctx.setLineDash([]);
@@ -156,7 +218,7 @@
         const p = document.createElement('div');
         p.className = 'player ' + (team === 'A' ? 'teamA' : 'teamB');
         p.innerText = team;
-        p.style.left = '40%'; p.style.top = '45%';
+        p.style.left = '45%'; p.style.top = '45%';
         container.appendChild(p);
         
         let isDragging = false;
@@ -165,13 +227,13 @@
             if(!isDragging) return;
             const t = e.touches[0];
             const rect = container.getBoundingClientRect();
-            p.style.left = (t.clientX - rect.left - 18) + 'px';
-            p.style.top = (t.clientY - rect.top - 18) + 'px';
+            p.style.left = (t.clientX - rect.left - 16) + 'px';
+            p.style.top = (t.clientY - rect.top - 16) + 'px';
         }, {passive: false});
         window.addEventListener("touchend", () => isDragging = false);
     }
 
-    window.onload = initCanvas;
+    window.onload = drawPitch;
 </script>
 </body>
 </html>
