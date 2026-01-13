@@ -67,8 +67,6 @@ canvas {
     position: absolute;
     top: 0;
     left: 0;
-    width: 100%;
-    height: 100%;
     z-index: 5;
 }
 
@@ -89,8 +87,8 @@ canvas {
     user-select: none;
 }
 
-.teamHome { background: #ffd600; color: #000; border-color: #000; } /* TIME DA CASA */
-.teamAway { background: #1565c0; color: #fff; border-color: #fff; } /* TIME VISITANTE */
+.teamHome { background: #ffd600; color: #000; border-color: #000; }
+.teamAway { background: #1565c0; color: #fff; border-color: #fff; }
 </style>
 </head>
 <body>
@@ -99,6 +97,9 @@ canvas {
     <button id="btn-arrow" class="secondary" onclick="setMode('arrow')">➡️ Seta</button>
     <button id="btn-pass" class="secondary" onclick="setMode('pass')">🔗 Passe</button>
     <button class="danger" onclick="clearCanvas()">🧹 Limpar Linhas</button>
+    <button onclick="saveScheme()">💾 Save</button>
+    <button onclick="loadScheme()">📂 Load</button>
+    <button onclick="exportScheme()">📤 Export</button>
 </div>
 
 <div id="schemes">
@@ -133,67 +134,64 @@ canvas {
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 const container = document.getElementById("field-container");
-let mode = null;
-let drawing = false;
-let startX = 0, startY = 0;
-let lines = [];
-let players = [];
+let mode = null, drawing=false, startX=0, startY=0, lines=[], players=[];
+let panX=0, panY=0, isPanning=false, panStartX=0, panStartY=0;
 
+// Inicialização
 function initCanvas(){
     canvas.width = container.clientWidth;
     canvas.height = container.clientHeight;
     redrawLines();
 }
-window.onload = function(){
-    initCanvas();
-    applyDefaultScheme();
-};
-window.onresize = initCanvas;
+window.onload=function(){ initCanvas(); applyDefaultScheme(); };
+window.onresize=initCanvas;
 
+// Modo desenho
 function setMode(m){
-    mode = (mode===m)?null:m;
+    mode=(mode===m)?null:m;
     document.querySelectorAll('button').forEach(b=>b.classList.remove('active'));
     if(mode) document.getElementById('btn-'+mode).classList.add('active');
 }
 
+// Coordenadas
 function getXY(e){
-    const rect = canvas.getBoundingClientRect();
-    const t = e.touches ? e.touches[0] : e;
+    const rect=canvas.getBoundingClientRect();
+    const t=e.touches?e.touches[0]:e;
     return [t.clientX - rect.left, t.clientY - rect.top];
 }
 
+// Desenhar linhas
 function drawLineOnCanvas(x1,y1,x2,y2,m,save=true){
     ctx.strokeStyle = m==='arrow'?'#ff1744':'#fff';
     ctx.setLineDash(m==='pass'?[10,10]:[]);
-    ctx.lineWidth = 3;
+    ctx.lineWidth=3;
     ctx.beginPath();
-    ctx.moveTo(x1,y1);
-    ctx.lineTo(x2,y2);
+    ctx.moveTo(x1+panX,y1+panY);
+    ctx.lineTo(x2+panX,y2+panY);
     ctx.stroke();
     if(m==='arrow'){
-        const angle = Math.atan2(y2-y1,x2-x1);
-        const head = Math.min(canvas.width,canvas.height)/40;
+        const angle=Math.atan2(y2-y1,x2-x1);
+        const head=Math.min(canvas.width,canvas.height)/40;
         ctx.fillStyle='#ff1744';
         ctx.beginPath();
-        ctx.moveTo(x2,y2);
-        ctx.lineTo(x2-head*Math.cos(angle-0.5),y2-head*Math.sin(angle-0.5));
-        ctx.lineTo(x2-head*Math.cos(angle+0.5),y2-head*Math.sin(angle+0.5));
+        ctx.moveTo(x2+panX,y2+panY);
+        ctx.lineTo(x2+panX-head*Math.cos(angle-0.5),y2+panY-head*Math.sin(angle-0.5));
+        ctx.lineTo(x2+panX-head*Math.cos(angle+0.5),y2+panY-head*Math.sin(angle+0.5));
         ctx.fill();
     }
     ctx.setLineDash([]);
     if(save) lines.push({startX:x1,startY:y1,endX:x2,endY:y2,mode:m});
 }
-
 function redrawLines(){
     ctx.clearRect(0,0,canvas.width,canvas.height);
     for(const l of lines) drawLineOnCanvas(l.startX,l.startY,l.endX,l.endY,l.mode,false);
 }
 
+// Eventos desenho
 canvas.addEventListener("mousedown", startDraw);
 canvas.addEventListener("touchstart", startDraw,{passive:false});
 canvas.addEventListener("mouseup", endDraw);
 canvas.addEventListener("touchend", endDraw);
-
 function startDraw(e){
     if(!mode) return;
     drawing=true;
@@ -204,16 +202,14 @@ function endDraw(e){
     if(!drawing) return;
     drawing=false;
     const [endX,endY]=getXY(e);
-    drawLineOnCanvas(startX,startY,endX,endY,mode);
+    drawLineOnCanvas(startX-startX*0+0,endX*0+0,endX,endY,mode);
+    redrawLines();
     e.preventDefault();
 }
-function clearCanvas(){
-    lines=[];
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-}
+function clearCanvas(){ lines=[]; redrawLines(); }
 
-// Função de adicionar jogadores
-function addPlayer(xPercent, yPercent, team, number){
+// Adicionar jogadores
+function addPlayer(xPercent,yPercent,team,number){
     const p=document.createElement('div');
     p.className='player '+(team==='Home'?'teamHome':'teamAway');
     p.innerText=(team==='Home'?'C':'V')+number;
@@ -225,7 +221,7 @@ function addPlayer(xPercent, yPercent, team, number){
     let isDragging=false;
     function move(e){
         if(!isDragging) return;
-        const t=e.touches ? e.touches[0]:e;
+        const t=e.touches?e.touches[0]:e;
         const rect=container.getBoundingClientRect();
         p.style.left=(t.clientX-rect.left-16)+'px';
         p.style.top=(t.clientY-rect.top-16)+'px';
@@ -239,41 +235,82 @@ function addPlayer(xPercent, yPercent, team, number){
     window.addEventListener("mouseup", stopMove);
     window.addEventListener("touchend", stopMove);
 }
-
-function clearPlayers(){
-    for(const p of players) p.remove();
-    players=[];
-}
+function clearPlayers(){ for(const p of players)p.remove(); players=[]; }
 
 // Esquemas táticos
 const schemes={
-'4-4-2':[ ['Home',50,90], ['Home',20,70], ['Home',40,70], ['Home',60,70], ['Home',80,70], ['Home',20,50], ['Home',40,50], ['Home',60,50], ['Home',80,50], ['Home',35,20], ['Home',65,20] ],
-'4-3-3':[ ['Home',50,90], ['Home',20,70], ['Home',40,70], ['Home',60,70], ['Home',80,70], ['Home',30,50], ['Home',50,50], ['Home',70,50], ['Home',20,20], ['Home',50,20], ['Home',80,20] ],
-'3-5-2':[ ['Home',50,90], ['Home',25,70], ['Home',50,70], ['Home',75,70], ['Home',10,50], ['Home',30,50], ['Home',50,50], ['Home',70,50], ['Home',90,50], ['Home',35,20], ['Home',65,20] ],
-'4-2-3-1':[ ['Home',50,90], ['Home',20,70], ['Home',40,70], ['Home',60,70], ['Home',80,70], ['Home',35,50], ['Home',65,50], ['Home',25,35], ['Home',50,35], ['Home',75,35], ['Home',50,20] ],
-'5-3-2':[ ['Home',50,90], ['Home',10,70], ['Home',30,70], ['Home',50,70], ['Home',70,70], ['Home',90,70], ['Home',30,50], ['Home',50,50], ['Home',70,50], ['Home',40,20], ['Home',60,20] ],
-'4-1-4-1':[ ['Home',50,90], ['Home',20,70], ['Home',40,70], ['Home',60,70], ['Home',80,70], ['Home',50,55], ['Home',20,40], ['Home',40,40], ['Home',60,40], ['Home',80,40], ['Home',50,20] ],
-'3-4-3':[ ['Home',50,90], ['Home',25,70], ['Home',50,70], ['Home',75,70], ['Home',20,50], ['Home',40,50], ['Home',60,50], ['Home',80,50], ['Home',20,20], ['Home',50,20], ['Home',80,20] ]
+'4-4-2':[ ['Home',50,90], ['Home',20,70], ['Home',40,70], ['Home',60,70], ['Home',80,70], ['Home',20,50], ['Home',40,50], ['Home',60,50], ['Home',80,50], ['Home',35,20], ['Home',65,20] ]
 };
-
-// Aplicar esquema padrão para CASA e VISITANTE
 function applyDefaultScheme(){
     clearPlayers();
-    const homeScheme = schemes['4-4-2'];
-    const awayScheme = homeScheme.map(p => ['Away', p[1], 150-p[2]]);
-    let num=1;
-    homeScheme.forEach(p => addPlayer(p[1], p[2], p[0], num++));
-    num=1;
-    awayScheme.forEach(p => addPlayer(p[1], p[2], p[0], num++));
+    const homeScheme=schemes['4-4-2'];
+    const awayScheme=homeScheme.map(p=>['Away',p[1],150-p[2]]);
+    let num=1; homeScheme.forEach(p=>addPlayer(p[1],p[2],p[0],num++));
+    num=1; awayScheme.forEach(p=>addPlayer(p[1],p[2],p[0],num++));
 }
-
-// Botão aplicar esquema (para o time da casa apenas)
 function applyScheme(name){
     clearPlayers();
     const sch=schemes[name];
-    let num=1;
-    sch.forEach(p => addPlayer(p[1], p[2], p[0], num++));
+    let num=1; sch.forEach(p=>addPlayer(p[1],p[2],p[0],num++));
 }
+
+// SAVE / LOAD / EXPORT
+function saveScheme(){
+    const data={players:[],lines:lines};
+    players.forEach(p=>{
+        const rect=container.getBoundingClientRect();
+        data.players.push({
+            team:p.classList.contains('teamHome')?'Home':'Away',
+            x:((p.offsetLeft+16)/rect.width*100),
+            y:((p.offsetTop+16)/rect.height*100),
+            text:p.innerText
+        });
+    });
+    localStorage.setItem('footvision_save',JSON.stringify(data));
+    alert('Esquema salvo!');
+}
+function loadScheme(){
+    const data=JSON.parse(localStorage.getItem('footvision_save'));
+    if(!data) return alert('Nenhum esquema salvo.');
+    clearPlayers(); lines=data.lines||[]; redrawLines();
+    data.players.forEach(p=>addPlayer(p.x,p.y,p.team,p.text.replace(/[CV]/,'')));
+}
+function exportScheme(){
+    const data=JSON.stringify({players:players.map(p=>{
+        const rect=container.getBoundingClientRect();
+        return {
+            team:p.classList.contains('teamHome')?'Home':'Away',
+            x:((p.offsetLeft+16)/rect.width*100),
+            y:((p.offsetTop+16)/rect.height*100),
+            text:p.innerText
+        }
+    }),lines:lines},null,2);
+    const blob=new Blob([data],{type:'application/json'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url; a.download='footvision_export.json'; a.click();
+    URL.revokeObjectURL(url);
+}
+
+// Panning (arrastar campo)
+container.addEventListener("mousedown",(e)=>{
+    if(e.target!==canvas) return;
+    isPanning=true;
+    panStartX=e.clientX-panX;
+    panStartY=e.clientY-panY;
+});
+container.addEventListener("touchstart",(e)=>{
+    if(e.target!==canvas) return;
+    isPanning=true;
+    const t=e.touches[0];
+    panStartX=t.clientX-panX;
+    panStartY=t.clientY-panY;
+});
+window.addEventListener("mousemove",(e)=>{ if(isPanning){ panX=e.clientX-panStartX; panY=e.clientY-panStartY; redrawLines(); }});
+window.addEventListener("touchmove",(e)=>{ if(isPanning){ const t=e.touches[0]; panX=t.clientX-panStartX; panY=t.clientY-panStartY; redrawLines(); }},{passive:false});
+window.addEventListener("mouseup",()=>{isPanning=false;});
+window.addEventListener("touchend",()=>{isPanning=false;});
+
 </script>
 </body>
 </html>
